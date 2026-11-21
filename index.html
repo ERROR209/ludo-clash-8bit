@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LUDO CLASH × 8-BIT BATTLE</title>
+  <title>LUDO CLASH × 8-BIT ULTIMATE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -15,11 +15,23 @@
     <div class="royal-card">
       <div class="crown-icon">👑</div>
       <h1 class="royal-title">LUDO CLASH</h1>
-      <div class="royal-badge">MEMORY TRAPS × 8-BIT BATTLE</div>
+      <div class="royal-badge">ULTIMATE 8-BIT EDITION</div>
 
       <div class="name-box">
         <label>YOUR NAME</label>
         <input type="text" id="player-name" maxlength="10" placeholder="Enter Name" value="Player1" />
+      </div>
+
+      <!-- MATCH MODIFIERS -->
+      <div class="toggles-row">
+        <label class="toggle-chip">
+          <input type="checkbox" id="opt-trap-placer" checked />
+          <span>💣 Place Traps</span>
+        </label>
+        <label class="toggle-chip">
+          <input type="checkbox" id="opt-sudden-death" checked />
+          <span>⚠️ Sudden Death</span>
+        </label>
       </div>
 
       <div class="menu-stack">
@@ -56,11 +68,16 @@
           <div class="lk-name" id="pname-1">GREEN</div>
           <div class="lk-sub" id="pscore-1">Home: 0/4</div>
         </div>
+        <div id="emote-1" class="emote-bubble hidden">🔥</div>
       </div>
 
-      <button class="sound-pill" onclick="toggleSound()" id="sound-btn">🔊</button>
+      <div class="mid-controls">
+        <button class="sound-pill" onclick="toggleSound()" id="sound-btn">🔊</button>
+        <div id="turn-counter-pill" class="turn-num">T1</div>
+      </div>
 
       <div id="pcard-2" class="lk-profile yellow-p">
+        <div id="emote-2" class="emote-bubble hidden">🔥</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-2">YELLOW</div>
           <div class="lk-sub" id="pscore-2">Home: 0/4</div>
@@ -72,10 +89,19 @@
     <!-- WOODEN-GOLD FRAMED LUDO BOARD -->
     <div class="wooden-frame">
       <canvas id="ludo-canvas" width="600" height="600"></canvas>
-      <!-- 5-SECOND MEMORY REVEAL BANNER -->
-      <div id="memory-banner" class="memory-pill hidden">👁️ MEMORIZE TRAPS! 5s</div>
+      <!-- TRAP PLACEMENT / MEMORY BANNER -->
+      <div id="memory-banner" class="memory-pill hidden">💣 TAP TRACK TO HIDE TRAPS!</div>
       <!-- ACTION POPUP TOAST -->
       <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
+    </div>
+
+    <!-- LIVE EMOTE BAR -->
+    <div class="emote-bar">
+      <button onclick="sendEmote('😂')">😂</button>
+      <button onclick="sendEmote('😭')">😭</button>
+      <button onclick="sendEmote('🔥')">🔥</button>
+      <button onclick="sendEmote('💀')">💀</button>
+      <button onclick="sendEmote('GG!')">GG</button>
     </div>
 
     <!-- BOTTOM PLAYERS (RED & BLUE) + 3D DICE -->
@@ -86,6 +112,7 @@
           <div class="lk-name" id="pname-0">RED</div>
           <div class="lk-sub" id="pscore-0">Home: 0/4</div>
         </div>
+        <div id="emote-0" class="emote-bubble hidden">🔥</div>
       </div>
 
       <!-- 3D LUDO KING DICE BOX -->
@@ -105,6 +132,7 @@
       </div>
 
       <div id="pcard-3" class="lk-profile blue-p">
+        <div id="emote-3" class="emote-bubble hidden">🔥</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-3">BLUE</div>
           <div class="lk-sub" id="pscore-3">Home: 0/4</div>
@@ -122,12 +150,13 @@
         <span id="battle-header-text">★ 8-BIT CLASH ARENA ★</span>
       </div>
 
-      <!-- PIXEL HEALTH HUD -->
+      <!-- PIXEL HEALTH & RAGE HUD -->
       <div class="retro-hp-row">
         <div class="retro-stat-box">
           <div class="r-name" id="atk-name">RED KNIGHT</div>
           <div class="r-hp-track"><div id="atk-hp-bar" class="r-hp-fill"></div></div>
-          <div class="r-hp-num" id="atk-hp-text">HP 110/110</div>
+          <div class="r-rage-track"><div id="atk-rage-bar" class="r-rage-fill"></div></div>
+          <div class="r-hp-num" id="atk-hp-text">HP 110 | RAGE 0%</div>
         </div>
 
         <div class="r-vs">VS</div>
@@ -135,31 +164,36 @@
         <div class="retro-stat-box">
           <div class="r-name" id="def-name">GREEN NINJA</div>
           <div class="r-hp-track"><div id="def-hp-bar" class="r-hp-fill"></div></div>
-          <div class="r-hp-num" id="def-hp-text">HP 100/100</div>
+          <div class="r-rage-track"><div id="def-rage-bar" class="r-rage-fill"></div></div>
+          <div class="r-hp-num" id="def-hp-text">HP 100 | RAGE 0%</div>
         </div>
       </div>
 
       <!-- 8-BIT PIXEL CHARACTER FIGHT STAGE CANVAS -->
       <div class="pixel-stage-frame">
-        <canvas id="battle-canvas" width="320" height="170"></canvas>
+        <canvas id="battle-canvas" width="320" height="165"></canvas>
       </div>
 
       <!-- RETRO DIALOGUE BOX -->
       <div id="battle-log" class="retro-dialogue">A wild clash begins!</div>
 
-      <!-- RETRO ARCADE ACTION BUTTONS -->
+      <!-- RETRO ARCADE ACTION BUTTONS (4 MOVES INCLUDING ULTIMATE) -->
       <div id="battle-controls" class="retro-btn-grid">
-        <button class="arcade-btn blue-arc" onclick="submitBattleMove('slash')">
-          <span>⚔️ SLASH</span>
+        <button class="arcade-btn blue-arc" id="btn-slash" onclick="submitBattleMove('slash')">
+          <span id="slash-label">⚔️ SLASH</span>
           <small>26-34 DMG</small>
         </button>
         <button class="arcade-btn red-arc" onclick="submitBattleMove('smash')">
-          <span>🔥 HEAVY HIT</span>
-          <small>50-60 DMG (70%)</small>
+          <span>💥 HEAVY HIT</span>
+          <small>50-60 (70%)</small>
         </button>
         <button class="arcade-btn green-arc" onclick="submitBattleMove('guard')">
           <span>🛡️ GUARD</span>
-          <small>BLOCK +18 HP</small>
+          <small>BLOCK +18HP</small>
+        </button>
+        <button class="arcade-btn gold-arc" id="btn-ult" onclick="submitBattleMove('ult')" disabled>
+          <span>🔥 ULTIMATE</span>
+          <small id="ult-sub">100% RAGE</small>
         </button>
       </div>
     </div>
@@ -170,7 +204,7 @@
     <div class="royal-card">
       <div class="crown-icon">🏆</div>
       <h2 id="winner-title" class="royal-title">RED WINS!</h2>
-      <p style="color:#dbeafe;margin:10px 0 18px;">Champion of Ludo Clash!</p>
+      <p style="color:#dbeafe;margin:10px 0 18px;">Ultimate 8-Bit Ludo Champion!</p>
       <button class="glossy-btn btn-green" onclick="location.reload()">PLAY AGAIN</button>
     </div>
   </div>
