@@ -3,147 +3,174 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LUDO CLASH 8-BIT</title>
+  <title>LUDO KING × 8-BIT BATTLE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
-  <!-- LOBBY / MENU SCREEN -->
+  <!-- MODERN LUDO KING STYLE LOBBY -->
   <div id="menu-screen" class="screen active">
-    <div class="retro-box menu-card">
-      <div class="badge-8bit">ARCADE EDITION</div>
-      <h1 class="game-title">LUDO CLASH<br><span>8-BIT</span></h1>
-      <p class="subtitle">Roll • Power-Up • 8-Bit Battle!</p>
+    <div class="royal-card">
+      <div class="crown-icon">👑</div>
+      <h1 class="royal-title">LUDO CLASH</h1>
+      <div class="royal-badge">8-BIT BATTLE EDITION</div>
 
-      <div class="input-group">
-        <label>PLAYER NAME</label>
+      <div class="name-box">
+        <label>YOUR NAME</label>
         <input type="text" id="player-name" maxlength="10" placeholder="Enter Name" value="Player1" />
       </div>
 
-      <div class="mode-buttons">
-        <button class="btn-8bit btn-green" onclick="startLocalGame('bot')">🤖 VS SMART BOT</button>
-        <button class="btn-8bit btn-blue" onclick="startLocalGame('local')">👥 PASS & PLAY (2P)</button>
-        <button class="btn-8bit btn-gold" onclick="showOnlineLobby()">🌐 ONLINE MULTIPLAYER</button>
+      <div class="menu-stack">
+        <button class="glossy-btn btn-green" onclick="startLocalGame('bot')">🤖 PLAY VS COMPUTER</button>
+        <button class="glossy-btn btn-blue" onclick="startLocalGame('local')">👥 PASS & PLAY (2P)</button>
+        <button class="glossy-btn btn-gold" onclick="showOnlineLobby()">🌐 PLAY WITH FRIENDS</button>
       </div>
 
-      <!-- ONLINE LOBBY PANEL -->
-      <div id="online-panel" class="hidden">
-        <hr class="retro-divider" />
-        <button class="btn-8bit btn-purple" onclick="hostOnlineGame()">➕ CREATE ROOM (HOST)</button>
-        <div id="host-info" class="hidden room-box">
-          <span>ROOM CODE:</span>
+      <div id="online-panel" class="hidden online-box">
+        <button class="glossy-btn btn-purple" onclick="hostOnlineGame()">➕ CREATE ROOM</button>
+        <div id="host-info" class="hidden room-card">
+          <span>ROOM CODE</span>
           <strong id="room-code-display">----</strong>
           <small id="lobby-players-list">Waiting for friends...</small>
-          <button id="start-online-btn" class="btn-8bit btn-green hidden" onclick="launchOnlineMatch()">▶ START MATCH</button>
+          <button id="start-online-btn" class="glossy-btn btn-green hidden" onclick="launchOnlineMatch()">▶ START GAME</button>
         </div>
 
-        <div class="join-row">
+        <div class="join-bar">
           <input type="text" id="join-code-input" maxlength="5" placeholder="CODE" />
-          <button class="btn-8bit btn-orange" onclick="joinOnlineGame()">JOIN</button>
+          <button class="glossy-btn btn-red" onclick="joinOnlineGame()">JOIN</button>
         </div>
-        <p id="net-status" class="status-text"></p>
-      </div>
-
-      <div class="legend-mini">
-        <span>⚡+3</span> <span>⚔️+ATK</span> <span>🛡️SHIELD</span> <span>💣-2</span>
+        <p id="net-status" class="net-msg"></p>
       </div>
     </div>
   </div>
 
-  <!-- MAIN GAME SCREEN -->
+  <!-- LUDO KING STYLE GAME BOARD SCREEN -->
   <div id="game-screen" class="screen">
-    <!-- TOP PLAYER CARDS -->
-    <div class="top-bar">
-      <div id="pcard-1" class="player-card green-card">
-        <div class="p-name" id="pname-1">GREEN</div>
-        <div class="p-score" id="pscore-1">🏠 0/4</div>
+    <!-- TOP PLAYERS (GREEN & YELLOW) -->
+    <div class="hud-row">
+      <div id="pcard-1" class="lk-profile green-p">
+        <div class="lk-avatar" style="background:#16a34a;">G</div>
+        <div class="lk-info">
+          <div class="lk-name" id="pname-1">GREEN</div>
+          <div class="lk-sub" id="pscore-1">Home: 0/4</div>
+        </div>
+        <div class="mini-dice" id="mdice-1">🎲</div>
       </div>
-      <button class="icon-btn" onclick="toggleSound()" id="sound-btn">🔊</button>
-      <div id="pcard-2" class="player-card yellow-card">
-        <div class="p-name" id="pname-2">YELLOW</div>
-        <div class="p-score" id="pscore-2">🏠 0/4</div>
+
+      <button class="sound-pill" onclick="toggleSound()" id="sound-btn">🔊</button>
+
+      <div id="pcard-2" class="lk-profile yellow-p">
+        <div class="mini-dice" id="mdice-2">🎲</div>
+        <div class="lk-info" style="text-align:right;">
+          <div class="lk-name" id="pname-2">YELLOW</div>
+          <div class="lk-sub" id="pscore-2">Home: 0/4</div>
+        </div>
+        <div class="lk-avatar" style="background:#eab308;">Y</div>
       </div>
     </div>
 
-    <!-- LUDO CANVAS BOARD -->
-    <div class="board-wrapper">
+    <!-- WOODEN-GOLD FRAMED LUDO BOARD -->
+    <div class="wooden-frame">
       <canvas id="ludo-canvas" width="600" height="600"></canvas>
-      <div id="toast-banner" class="toast hidden">⚡ TURBO +3!</div>
+      <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
     </div>
 
-    <!-- BOTTOM PLAYER CARDS & DICE -->
-    <div class="bottom-bar">
-      <div id="pcard-0" class="player-card red-card">
-        <div class="p-name" id="pname-0">RED</div>
-        <div class="p-score" id="pscore-0">🏠 0/4</div>
+    <!-- BOTTOM PLAYERS (RED & BLUE) + 3D DICE -->
+    <div class="hud-row">
+      <div id="pcard-0" class="lk-profile red-p">
+        <div class="lk-avatar" style="background:#dc2626;">R</div>
+        <div class="lk-info">
+          <div class="lk-name" id="pname-0">RED</div>
+          <div class="lk-sub" id="pscore-0">Home: 0/4</div>
+        </div>
       </div>
 
-      <div class="dice-zone">
-        <div id="turn-indicator">RED'S TURN</div>
-        <button id="dice-btn" class="dice-box" onclick="handleDiceClick()">🎲</button>
-        <div id="action-hint">Tap Dice to Roll</div>
+      <!-- 3D LUDO KING DICE BOX -->
+      <div class="center-dice-dock">
+        <div id="turn-indicator" class="turn-pill">RED'S TURN</div>
+        <div class="dice-scene" onclick="handleDiceClick()">
+          <div id="cube-dice" class="cube show-1">
+            <div class="face f1"><span class="dot"></span></div>
+            <div class="face f2"><span class="dot"></span><span class="dot"></span></div>
+            <div class="face f3"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="face f4"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="face f5"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+            <div class="face f6"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          </div>
+        </div>
+        <div id="action-hint" class="hint-pill">TAP DICE</div>
       </div>
 
-      <div id="pcard-3" class="player-card blue-card">
-        <div class="p-name" id="pname-3">BLUE</div>
-        <div class="p-score" id="pscore-3">🏠 0/4</div>
+      <div id="pcard-3" class="lk-profile blue-p">
+        <div class="lk-info" style="text-align:right;">
+          <div class="lk-name" id="pname-3">BLUE</div>
+          <div class="lk-sub" id="pscore-3">Home: 0/4</div>
+        </div>
+        <div class="lk-avatar" style="background:#2563eb;">B</div>
       </div>
     </div>
   </div>
 
-  <!-- 8-BIT MINI BATTLE MODAL -->
-  <div id="battle-modal" class="modal hidden">
-    <div class="battle-arena" id="battle-arena">
-      <div class="battle-header">⚔️ 8-BIT CLASH! ⚔️</div>
-      <div id="battle-subtitle" class="battle-sub">Choose your move!</div>
+  <!-- PURE 8-BIT RETRO PIXEL BATTLE ARENA -->
+  <div id="battle-modal" class="retro-overlay hidden">
+    <div class="retro-console" id="battle-arena">
+      <div class="crt-scanlines"></div>
+      <div class="retro-top-bar">
+        <span>★ 8-BIT CLASH ARENA ★</span>
+      </div>
 
-      <div class="fighters-stage">
-        <!-- ATTACKER -->
-        <div class="fighter-box" id="attacker-box">
-          <div class="role-tag" id="atk-role">KNIGHT</div>
-          <div class="pixel-sprite" id="atk-sprite">🗡️</div>
-          <div class="fighter-name" id="atk-name">RED</div>
-          <div class="hp-bar-bg"><div id="atk-hp-bar" class="hp-bar-fill"></div></div>
-          <div class="hp-text" id="atk-hp-text">110/110</div>
+      <!-- PIXEL HEALTH HUD -->
+      <div class="retro-hp-row">
+        <div class="retro-stat-box">
+          <div class="r-name" id="atk-name">RED KNIGHT</div>
+          <div class="r-hp-track"><div id="atk-hp-bar" class="r-hp-fill"></div></div>
+          <div class="r-hp-num" id="atk-hp-text">HP 110/110</div>
         </div>
 
-        <div class="vs-badge">VS</div>
+        <div class="r-vs">VS</div>
 
-        <!-- DEFENDER -->
-        <div class="fighter-box" id="defender-box">
-          <div class="role-tag" id="def-role">TANK</div>
-          <div class="pixel-sprite" id="def-sprite">🛡️</div>
-          <div class="fighter-name" id="def-name">GREEN</div>
-          <div class="hp-bar-bg"><div id="def-hp-bar" class="hp-bar-fill"></div></div>
-          <div class="hp-text" id="def-hp-text">100/100</div>
+        <div class="retro-stat-box">
+          <div class="r-name" id="def-name">GREEN NINJA</div>
+          <div class="r-hp-track"><div id="def-hp-bar" class="r-hp-fill"></div></div>
+          <div class="r-hp-num" id="def-hp-text">HP 100/100</div>
         </div>
       </div>
 
-      <div id="battle-log" class="battle-log">A wild clash begins!</div>
+      <!-- 8-BIT PIXEL CHARACTER FIGHT STAGE CANVAS -->
+      <div class="pixel-stage-frame">
+        <canvas id="battle-canvas" width="320" height="170"></canvas>
+      </div>
 
-      <div id="battle-controls" class="battle-moves">
-        <button class="move-btn slash" onclick="submitBattleMove('slash')">
-          ⚔️ SLASH<small>25-32 DMG (100%)</small>
+      <!-- RETRO DIALOGUE BOX -->
+      <div id="battle-log" class="retro-dialogue">A wild clash begins!</div>
+
+      <!-- RETRO ARCADE ACTION BUTTONS -->
+      <div id="battle-controls" class="retro-btn-grid">
+        <button class="arcade-btn blue-arc" onclick="submitBattleMove('slash')">
+          <span>⚔️ SLASH</span>
+          <small>26-34 DMG</small>
         </button>
-        <button class="move-btn smash" onclick="submitBattleMove('smash')">
-          💥 SMASH<small>48-58 DMG (70%)</small>
+        <button class="arcade-btn red-arc" onclick="submitBattleMove('smash')">
+          <span>🔥 HEAVY HIT</span>
+          <small>50-60 DMG (70%)</small>
         </button>
-        <button class="move-btn guard" onclick="submitBattleMove('guard')">
-          🛡️ GUARD<small>-70% DMG +15 HP</small>
+        <button class="arcade-btn green-arc" onclick="submitBattleMove('guard')">
+          <span>🛡️ GUARD</span>
+          <small>BLOCK +18 HP</small>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- WINNER MODAL -->
-  <div id="winner-modal" class="modal hidden">
-    <div class="retro-box winner-card">
-      <div class="pixel-sprite big">🏆</div>
-      <h2 id="winner-title">RED WINS!</h2>
-      <p>8-Bit Arena Champion</p>
-      <button class="btn-8bit btn-green" onclick="location.reload()">PLAY AGAIN</button>
+  <!-- LUDO KING STYLE WINNER MODAL -->
+  <div id="winner-modal" class="retro-overlay hidden">
+    <div class="royal-card">
+      <div class="crown-icon">🏆</div>
+      <h2 id="winner-title" class="royal-title">RED WINS!</h2>
+      <p style="color:#dbeafe;margin:10px 0 18px;">Champion of Ludo Clash!</p>
+      <button class="glossy-btn btn-green" onclick="location.reload()">PLAY AGAIN</button>
     </div>
   </div>
 

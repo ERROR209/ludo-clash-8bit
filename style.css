@@ -7,9 +7,9 @@
 }
 
 body {
-  background: #11131f;
-  color: #f4f4f8;
-  font-family: 'Rajdhani', sans-serif;
+  background: radial-gradient(circle at top, #1e3a8a 0%, #0f172a 100%);
+  color: #fff;
+  font-family: 'Poppins', sans-serif;
   height: 100dvh;
   overflow: hidden;
   display: flex;
@@ -20,438 +20,527 @@ body {
 .screen {
   display: none;
   width: 100%;
-  max-width: 480px;
+  max-width: 470px;
   height: 100dvh;
   padding: 10px;
   flex-direction: column;
   justify-content: space-between;
 }
 
-.screen.active {
-  display: flex;
-}
+.screen.active { display: flex; }
+.hidden { display: none !important; }
 
-.hidden {
-  display: none !important;
-}
-
-/* RETRO MENU */
+/* =========================================
+   LUDO KING MODERN ROYAL LOBBY
+   ========================================= */
 #menu-screen {
   justify-content: center;
   align-items: center;
 }
 
-.retro-box {
-  background: #1b1f33;
-  border: 4px solid #ffd166;
-  box-shadow: 0 0 0 4px #0b0d17, 0 10px 30px rgba(0,0,0,0.7);
-  padding: 20px;
+.royal-card {
   width: 100%;
+  background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%);
+  border: 4px solid #facc15;
+  border-radius: 22px;
+  padding: 22px 18px;
   text-align: center;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55), inset 0 2px 10px rgba(255,255,255,0.25);
 }
 
-.badge-8bit {
+.crown-icon {
+  font-size: 46px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+}
+
+.royal-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fef08a;
+  text-shadow: 0 3px 0 #854d0e;
+}
+
+.royal-badge {
   display: inline-block;
-  background: #ef476f;
+  background: #dc2626;
   color: #fff;
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  padding: 5px 10px;
-  margin-bottom: 12px;
+  font-size: 8px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  border: 2px solid #facc15;
+  margin: 6px 0 16px;
 }
 
-.game-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 22px;
-  line-height: 1.4;
-  color: #ffd166;
-  text-shadow: 3px 3px 0 #ef476f;
-}
-
-.game-title span {
-  color: #06d6a0;
-}
-
-.subtitle {
-  color: #a8b2d1;
-  font-size: 15px;
-  margin: 8px 0 16px;
-}
-
-.input-group {
+.name-box {
   text-align: left;
   margin-bottom: 14px;
 }
 
-.input-group label {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  color: #ffd166;
+.name-box label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fde047;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
-input {
+.name-box input, .join-bar input {
   width: 100%;
-  padding: 10px;
-  background: #0e111d;
-  border: 3px solid #4cc9f0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 2px solid #93c5fd;
+  background: #0f172a;
   color: #fff;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
   outline: none;
 }
 
-.mode-buttons {
+.menu-stack {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.btn-8bit {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 11px;
-  padding: 13px 10px;
-  border: 3px solid #000;
+.glossy-btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
   color: #fff;
   cursor: pointer;
-  box-shadow: inset -3px -3px 0 rgba(0,0,0,0.35), inset 3px 3px 0 rgba(255,255,255,0.25);
-  transition: transform 0.08s;
+  text-shadow: 0 2px 2px rgba(0,0,0,0.35);
+  transition: transform 0.1s;
 }
 
-.btn-8bit:active {
-  transform: scale(0.96);
+.glossy-btn:active { transform: scale(0.96); }
+.btn-green  { background: linear-gradient(180deg, #22c55e, #15803d); box-shadow: 0 4px 0 #14532d; }
+.btn-blue   { background: linear-gradient(180deg, #3b82f6, #1d4ed8); box-shadow: 0 4px 0 #1e3a8a; }
+.btn-gold   { background: linear-gradient(180deg, #f59e0b, #d97706); box-shadow: 0 4px 0 #78350f; }
+.btn-purple { background: linear-gradient(180deg, #a855f7, #7e22ce); box-shadow: 0 4px 0 #4c1d95; }
+.btn-red    { background: linear-gradient(180deg, #ef4444, #b91c1c); box-shadow: 0 4px 0 #7f1d1d; }
+
+.online-box {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 2px dashed rgba(255,255,255,0.25);
 }
 
-.btn-green { background: #06d6a0; color: #081c15; }
-.btn-blue { background: #118ab2; }
-.btn-gold { background: #f77f00; }
-.btn-purple { background: #7209b7; width: 100%; }
-.btn-orange { background: #ef476f; }
-
-.retro-divider {
-  border: 1px dashed #4a5568;
-  margin: 14px 0;
-}
-
-.room-box {
-  background: #0e111d;
-  border: 2px dashed #06d6a0;
+.room-card {
+  background: #0f172a;
+  border: 2px solid #facc15;
+  border-radius: 12px;
   padding: 10px;
   margin: 10px 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
-.room-box strong {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 18px;
-  color: #ffd166;
-  letter-spacing: 3px;
+.room-card strong {
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: #fde047;
 }
 
-.join-row {
+.join-bar {
   display: flex;
   gap: 8px;
   margin-top: 10px;
 }
 
-.join-row input {
+.join-bar input {
   text-transform: uppercase;
   text-align: center;
 }
 
-.status-text {
-  font-size: 13px;
-  color: #ffd166;
+.net-msg {
+  font-size: 12px;
+  color: #fde047;
   margin-top: 8px;
 }
 
-.legend-mini {
-  margin-top: 14px;
-  display: flex;
-  justify-content: space-around;
-  font-size: 12px;
-  background: #121524;
-  padding: 6px;
-  border: 2px solid #2b3152;
-}
-
-/* GAME HUD */
-.top-bar, .bottom-bar {
+/* =========================================
+   LUDO KING GAME HUD & WOODEN BOARD
+   ========================================= */
+.hud-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 6px;
 }
 
-.player-card {
+.lk-profile {
   flex: 1;
-  background: #1b1f33;
-  border: 3px solid #333;
+  background: rgba(15, 23, 42, 0.85);
+  border: 2px solid #334155;
+  border-radius: 14px;
   padding: 6px 8px;
-  border-radius: 6px;
-  opacity: 0.55;
-  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.6;
+  transition: all 0.25s;
 }
 
-.player-card.active-turn {
+.lk-profile.active-turn {
   opacity: 1;
-  transform: scale(1.04);
-  box-shadow: 0 0 12px rgba(255, 209, 102, 0.7);
-  border-color: #ffd166 !important;
+  border-color: #facc15;
+  background: rgba(30, 58, 138, 0.95);
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.65);
+  transform: scale(1.03);
 }
 
-.red-card { border-left: 6px solid #ef476f; }
-.green-card { border-left: 6px solid #06d6a0; }
-.yellow-card { border-left: 6px solid #ffd166; }
-.blue-card { border-left: 6px solid #4cc9f0; }
+.lk-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  border: 2px solid #fff;
+  flex-shrink: 0;
+}
 
-.p-name {
+.lk-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.lk-name {
+  font-size: 12px;
   font-weight: 700;
-  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.p-score {
-  font-size: 12px;
+.lk-sub {
+  font-size: 10px;
   color: #cbd5e1;
 }
 
-.icon-btn {
-  background: #1b1f33;
-  border: 2px solid #4cc9f0;
-  color: #fff;
-  font-size: 18px;
-  padding: 6px 10px;
-  border-radius: 6px;
+.mini-dice {
+  font-size: 16px;
+  opacity: 0.3;
 }
 
-/* BOARD */
-.board-wrapper {
+.sound-pill {
+  background: #1e293b;
+  border: 2px solid #facc15;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.wooden-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: #fff;
-  border: 4px solid #ffd166;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  background: #78350f;
+  padding: 7px;
+  border-radius: 16px;
+  border: 3px solid #facc15;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
 }
 
 #ludo-canvas {
   width: 100%;
   height: 100%;
+  background: #fff;
+  border-radius: 10px;
   display: block;
 }
 
-.toast {
+.lk-toast {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(11, 13, 23, 0.92);
-  border: 3px solid #ffd166;
-  color: #ffd166;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 12px;
-  padding: 12px 16px;
-  z-index: 10;
-  text-align: center;
+  background: linear-gradient(180deg, #facc15, #eab308);
+  color: #1e1b4b;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  z-index: 15;
   pointer-events: none;
 }
 
-/* DICE ZONE */
-.dice-zone {
+/* =========================================
+   3D LUDO KING DICE CUBE
+   ========================================= */
+.center-dice-dock {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 120px;
+  min-width: 104px;
 }
 
-#turn-indicator {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  color: #ffd166;
-  margin-bottom: 4px;
-}
-
-.dice-box {
-  width: 58px;
-  height: 58px;
-  background: #ffd166;
-  color: #11131f;
-  border: 4px solid #fff;
+.turn-pill {
+  font-size: 10px;
+  font-weight: 800;
+  background: #facc15;
+  color: #0f172a;
+  padding: 2px 8px;
   border-radius: 10px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 22px;
-  cursor: pointer;
-  box-shadow: 0 4px 0 #b38800;
-}
-
-.dice-box.rolling {
-  animation: shake 0.25s infinite;
-}
-
-#action-hint {
-  font-size: 11px;
-  color: #94a3b8;
-  margin-top: 3px;
-}
-
-/* 8-BIT BATTLE MODAL */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(5, 7, 15, 0.88);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 14px;
-  z-index: 50;
-}
-
-.battle-arena {
-  width: 100%;
-  max-width: 420px;
-  background: #16192b;
-  border: 4px solid #ef476f;
-  box-shadow: 0 0 0 4px #ffd166, 0 0 30px rgba(239, 71, 111, 0.6);
-  padding: 16px;
-  text-align: center;
-}
-
-.battle-header {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 14px;
-  color: #ffd166;
-  margin-bottom: 6px;
-}
-
-.battle-sub {
-  font-size: 13px;
-  color: #4cc9f0;
-  margin-bottom: 14px;
-}
-
-.fighters-stage {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #0d0f1a;
-  border: 3px solid #2e3454;
-  padding: 12px 8px;
-  margin-bottom: 12px;
-}
-
-.fighter-box {
-  width: 42%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.role-tag {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 7px;
-  background: #2b3152;
-  padding: 3px 6px;
-  color: #ffd166;
-  margin-bottom: 6px;
-}
-
-.pixel-sprite {
-  font-size: 40px;
-  margin: 4px 0;
-  filter: drop-shadow(0 4px 0 #000);
-}
-
-.pixel-sprite.big {
-  font-size: 56px;
-}
-
-.fighter-name {
-  font-weight: 700;
-  font-size: 14px;
   margin-bottom: 5px;
 }
 
-.hp-bar-bg {
-  width: 100%;
-  height: 12px;
-  background: #2b2d42;
-  border: 2px solid #fff;
+.dice-scene {
+  width: 54px;
+  height: 54px;
+  perspective: 300px;
+  cursor: pointer;
 }
 
-.hp-bar-fill {
+.cube {
+  width: 100%;
   height: 100%;
-  width: 100%;
-  background: #06d6a0;
-  transition: width 0.3s;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 
-.hp-text {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
+.cube.rolling {
+  animation: spinDice 0.35s linear infinite;
+}
+
+@keyframes spinDice {
+  0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+  50%  { transform: rotateX(180deg) rotateY(220deg) rotateZ(90deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
+}
+
+.face {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(145deg, #ffffff, #e2e8f0);
+  border: 2px solid #94a3b8;
+  border-radius: 10px;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.15);
+  display: grid;
+  padding: 7px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background: #dc2626;
+  border-radius: 50%;
+  align-self: center;
+  justify-self: center;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.f1 { transform: rotateY(0deg) translateZ(27px); grid-template: 1fr / 1fr; }
+.f1 .dot { width: 14px; height: 14px; }
+
+.f2 { transform: rotateY(90deg) translateZ(27px); grid-template: 1fr 1fr / 1fr 1fr; }
+.f2 .dot:nth-child(1) { grid-area: 1 / 1; }
+.f2 .dot:nth-child(2) { grid-area: 2 / 2; }
+
+.f3 { transform: rotateY(180deg) translateZ(27px); grid-template: 1fr 1fr 1fr / 1fr 1fr 1fr; }
+.f3 .dot:nth-child(1) { grid-area: 1 / 1; }
+.f3 .dot:nth-child(2) { grid-area: 2 / 2; }
+.f3 .dot:nth-child(3) { grid-area: 3 / 3; }
+
+.f4 { transform: rotateY(-90deg) translateZ(27px); grid-template: 1fr 1fr / 1fr 1fr; }
+
+.f5 { transform: rotateX(90deg) translateZ(27px); grid-template: 1fr 1fr 1fr / 1fr 1fr 1fr; }
+.f5 .dot:nth-child(1) { grid-area: 1 / 1; }
+.f5 .dot:nth-child(2) { grid-area: 1 / 3; }
+.f5 .dot:nth-child(3) { grid-area: 2 / 2; }
+.f5 .dot:nth-child(4) { grid-area: 3 / 1; }
+.f5 .dot:nth-child(5) { grid-area: 3 / 3; }
+
+.f6 { transform: rotateX(-90deg) translateZ(27px); grid-template: 1fr 1fr 1fr / 1fr 1fr; }
+.f6 .dot { background: #1e293b; }
+
+.cube.show-1 { transform: rotateX(0deg) rotateY(0deg); }
+.cube.show-2 { transform: rotateX(0deg) rotateY(-90deg); }
+.cube.show-3 { transform: rotateX(0deg) rotateY(-180deg); }
+.cube.show-4 { transform: rotateX(0deg) rotateY(90deg); }
+.cube.show-5 { transform: rotateX(-90deg) rotateY(0deg); }
+.cube.show-6 { transform: rotateX(90deg) rotateY(0deg); }
+
+.hint-pill {
+  font-size: 10px;
+  color: #fde047;
+  font-weight: 700;
   margin-top: 4px;
 }
 
-.vs-badge {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 13px;
-  color: #ef476f;
-}
-
-.battle-log {
-  background: #0b0d17;
-  border: 2px solid #4a5568;
-  padding: 8px;
-  font-size: 13px;
-  color: #ffd166;
-  min-height: 42px;
+/* =========================================
+   PURE 8-BIT RETRO PIXEL BATTLE WINDOW
+   ========================================= */
+.retro-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.86);
   display: flex;
-  align-items: center;
   justify-content: center;
-  margin-bottom: 12px;
+  align-items: center;
+  padding: 12px;
+  z-index: 99;
 }
 
-.battle-moves {
+.retro-console {
+  position: relative;
+  width: 100%;
+  max-width: 410px;
+  background: #14141f;
+  border: 4px solid #ffffff;
+  box-shadow: 0 0 0 4px #000, 0 0 0 8px #ef4444, 0 18px 40px rgba(0,0,0,0.9);
+  padding: 12px;
+  font-family: 'Press Start 2P', monospace;
+  color: #fff;
+  overflow: hidden;
+}
+
+.crt-scanlines {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.retro-top-bar {
+  background: #b91c1c;
+  border: 2px solid #facc15;
+  color: #fef08a;
+  font-size: 10px;
+  text-align: center;
+  padding: 7px;
+  margin-bottom: 10px;
+}
+
+.retro-hp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.retro-stat-box {
+  width: 43%;
+  background: #1f2438;
+  border: 2px solid #fff;
+  padding: 6px;
+}
+
+.r-name {
+  font-size: 7px;
+  color: #fde047;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.r-hp-track {
+  width: 100%;
+  height: 10px;
+  background: #3f1d2e;
+  border: 2px solid #fff;
+}
+
+.r-hp-fill {
+  height: 100%;
+  width: 100%;
+  background: #22c55e;
+  transition: width 0.25s steps(8);
+}
+
+.r-hp-num {
+  font-size: 7px;
+  margin-top: 4px;
+  color: #e2e8f0;
+}
+
+.r-vs {
+  font-size: 10px;
+  color: #ef4444;
+}
+
+.pixel-stage-frame {
+  width: 100%;
+  border: 3px solid #facc15;
+  background: #090d16;
+  margin-bottom: 8px;
+}
+
+#battle-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.retro-dialogue {
+  background: #0a0a12;
+  border: 3px solid #fff;
+  padding: 9px;
+  font-size: 8px;
+  line-height: 1.5;
+  color: #4ade80;
+  min-height: 44px;
+  margin-bottom: 10px;
+}
+
+.retro-btn-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 7px;
 }
 
-.move-btn {
+.arcade-btn {
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 9px;
   padding: 10px;
-  border: 3px solid #000;
+  border: 3px solid #fff;
   color: #fff;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,0.4);
 }
 
-.move-btn small {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
+.arcade-btn small {
+  font-size: 7px;
+  color: #fef08a;
 }
 
-.move-btn.slash { background: #118ab2; }
-.move-btn.smash { background: #ef476f; }
-.move-btn.guard { background: #06d6a0; color: #081c15; }
-.move-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.blue-arc  { background: #1d4ed8; }
+.red-arc   { background: #dc2626; }
+.green-arc { background: #15803d; }
+.arcade-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .hit-shake {
-  animation: shake 0.3s;
+  animation: retroShake 0.25s steps(4);
 }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  50% { transform: translateX(6px); }
-  75% { transform: translateX(-4px); }
+@keyframes retroShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-6px, 2px); }
+  50% { transform: translate(6px, -2px); }
+  75% { transform: translate(-4px, -2px); }
 }
