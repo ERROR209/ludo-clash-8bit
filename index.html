@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>3D LUDO × 8-BIT FIGHTER</title>
+  <title>3D LUDO PARTY × 8-BIT CHAOS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -11,26 +11,26 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
-  <!-- LOBBY SCREEN -->
+  <!-- CLEAN FUN LOBBY -->
   <div id="menu-screen" class="screen active">
     <div class="royal-card">
       <div class="crown-icon">👑</div>
-      <h1 class="royal-title">LUDO 3D CLASH</h1>
-      <div class="royal-badge">REAL-TIME ARCADE FIGHT EDITION</div>
+      <h1 class="royal-title">LUDO PARTY 3D</h1>
+      <div class="royal-badge">FUN & CHAOS EDITION</div>
 
       <div class="name-box">
-        <label>YOUR NAME</label>
+        <label>YOUR NICKNAME</label>
         <input type="text" id="player-name" maxlength="10" placeholder="Enter Name" value="Player1" />
       </div>
 
       <div class="toggles-row">
         <label class="toggle-chip">
           <input type="checkbox" id="opt-fast-start" checked />
-          <span>⚡ Fast Start (1 Token Out)</span>
+          <span>⚡ Fast Start</span>
         </label>
         <label class="toggle-chip">
-          <input type="checkbox" id="opt-traps" checked />
-          <span>💣 Mystery Tiles</span>
+          <input type="checkbox" id="opt-chaos" checked />
+          <span>❓ Lucky Chaos</span>
         </label>
       </div>
 
@@ -46,7 +46,7 @@
           <span>ROOM CODE</span>
           <strong id="room-code-display">----</strong>
           <small id="lobby-players-list">Waiting for friends...</small>
-          <button id="start-online-btn" class="glossy-btn btn-green hidden" onclick="launchOnlineMatch()">▶ START GAME</button>
+          <button id="start-online-btn" class="glossy-btn btn-green hidden" onclick="launchOnlineMatch()">▶ START PARTY</button>
         </div>
 
         <div class="join-bar">
@@ -58,7 +58,7 @@
     </div>
   </div>
 
-  <!-- 3D BOARD GAME SCREEN -->
+  <!-- 3D LUDO PARTY BOARD SCREEN -->
   <div id="game-screen" class="screen">
     <div class="hud-row">
       <div id="pcard-1" class="lk-profile green-p">
@@ -67,6 +67,7 @@
           <div class="lk-name" id="pname-1">GREEN</div>
           <div class="lk-sub" id="pscore-1">🏠0/4</div>
         </div>
+        <div id="emote-1" class="emote-bubble hidden">😂</div>
       </div>
 
       <div class="mid-controls">
@@ -75,6 +76,7 @@
       </div>
 
       <div id="pcard-2" class="lk-profile yellow-p">
+        <div id="emote-2" class="emote-bubble hidden">😂</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-2">YELLOW</div>
           <div class="lk-sub" id="pscore-2">🏠0/4</div>
@@ -87,6 +89,15 @@
       <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
     </div>
 
+    <!-- FUN SOUND EMOTE BAR -->
+    <div class="emote-bar">
+      <button onclick="sendEmote('😂')">😂</button>
+      <button onclick="sendEmote('😭')">😭</button>
+      <button onclick="sendEmote('🔥')">🔥</button>
+      <button onclick="sendEmote('😱')">😱</button>
+      <button onclick="sendEmote('👑')">👑</button>
+    </div>
+
     <div class="hud-row">
       <div id="pcard-0" class="lk-profile red-p">
         <div class="lk-avatar" style="background:#dc2626;">R</div>
@@ -94,6 +105,7 @@
           <div class="lk-name" id="pname-0">RED</div>
           <div class="lk-sub" id="pscore-0">🏠0/4</div>
         </div>
+        <div id="emote-0" class="emote-bubble hidden">😂</div>
       </div>
 
       <div class="center-dice-dock">
@@ -112,6 +124,7 @@
       </div>
 
       <div id="pcard-3" class="lk-profile blue-p">
+        <div id="emote-3" class="emote-bubble hidden">😂</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-3">BLUE</div>
           <div class="lk-sub" id="pscore-3">🏠0/4</div>
@@ -121,56 +134,14 @@
     </div>
   </div>
 
-  <!-- VS ENCOUNTER SPLASH -->
-  <div id="vs-splash" class="vs-splash hidden">
-    <div class="vs-band top-band" id="vs-atk-banner">RED KNIGHT</div>
-    <div class="vs-emblem">FIGHT!</div>
-    <div class="vs-band bot-band" id="vs-def-banner">GREEN NINJA</div>
-  </div>
-
-  <!-- REAL-TIME 2D ARCADE FIGHT ARENA (STREET FIGHTER STYLE) -->
-  <div id="battle-modal" class="retro-overlay hidden">
-    <div class="retro-console" id="battle-arena">
-      <div class="retro-top-bar">
-        <span id="battle-timer">TIME: 15</span>
-      </div>
-
-      <div class="retro-hp-row">
-        <div class="retro-stat-box">
-          <div class="r-name" id="atk-name">RED</div>
-          <div class="r-hp-track"><div id="atk-hp-bar" class="r-hp-fill"></div></div>
-          <div class="r-rage-track"><div id="atk-rage-bar" class="r-rage-fill"></div></div>
-        </div>
-
-        <div class="r-vs">K.O.</div>
-
-        <div class="retro-stat-box">
-          <div class="r-name" id="def-name">GREEN</div>
-          <div class="r-hp-track"><div id="def-hp-bar" class="r-hp-fill"></div></div>
-          <div class="r-rage-track"><div id="def-rage-bar" class="r-rage-fill"></div></div>
-        </div>
-      </div>
-
+  <!-- INSTANT 3-SECOND FUNNY 8-BIT CLASH CUTSCENE (ZERO BUTTONS!) -->
+  <div id="clash-modal" class="retro-overlay hidden">
+    <div class="retro-console">
+      <div class="retro-top-bar" id="clash-title">★ 8-BIT CLASH! ★</div>
       <div class="pixel-stage-frame">
-        <canvas id="battle-canvas" width="340" height="190"></canvas>
+        <canvas id="clash-canvas" width="320" height="170"></canvas>
       </div>
-
-      <div id="battle-log" class="retro-dialogue">MOVE, JUMP & STRIKE!</div>
-
-      <!-- LIVE ARCADE TOUCH JOYPAD + ACTION BUTTONS -->
-      <div id="fight-pad" class="fight-pad">
-        <div class="dpad-group">
-          <button class="pad-btn" onpointerdown="setFightInput('left', true)" onpointerup="setFightInput('left', false)" onpointerleave="setFightInput('left', false)">◀</button>
-          <button class="pad-btn" onpointerdown="setFightInput('right', true)" onpointerup="setFightInput('right', false)" onpointerleave="setFightInput('right', false)">▶</button>
-          <button class="pad-btn jump-btn" onpointerdown="triggerFightJump()">▲ JUMP</button>
-        </div>
-
-        <div class="atk-group">
-          <button class="pad-btn punch-btn" onpointerdown="triggerFightAttack('punch')">👊 PUNCH</button>
-          <button class="pad-btn kick-btn" onpointerdown="triggerFightAttack('kick')">🦶 KICK</button>
-          <button class="pad-btn beam-btn" id="btn-beam" onpointerdown="triggerFightAttack('beam')">🔥 BEAM</button>
-        </div>
-      </div>
+      <div id="clash-caption" class="retro-dialogue">BONK!!</div>
     </div>
   </div>
 
@@ -179,7 +150,7 @@
     <div class="royal-card">
       <div class="crown-icon">🏆</div>
       <h2 id="winner-title" class="royal-title">RED WINS!</h2>
-      <p style="color:#dbeafe;margin:10px 0 18px;">3D Ludo × 8-Bit Fighter Champion!</p>
+      <p style="color:#dbeafe;margin:10px 0 18px;">Ludo Party Champion!</p>
       <button class="glossy-btn btn-green" onclick="location.reload()">PLAY AGAIN</button>
     </div>
   </div>
