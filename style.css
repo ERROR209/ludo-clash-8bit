@@ -7,9 +7,9 @@
 }
 
 body {
-  background: radial-gradient(circle at top, #1e3a8a 0%, #0f172a 100%);
-  color: #fff;
   font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle at top, #1e3a8a 0%, #0f172a 65%, #020617 100%);
+  color: #ffffff;
   height: 100dvh;
   overflow: hidden;
   display: flex;
@@ -20,100 +20,79 @@ body {
 .screen {
   display: none;
   width: 100%;
-  max-width: 470px;
+  max-width: 460px;
   height: 100dvh;
   padding: 8px 10px;
   flex-direction: column;
   justify-content: space-between;
+  align-items: center;
 }
-
 .screen.active { display: flex; }
 .hidden { display: none !important; }
 
-/* =========================================
-   LUDO KING MODERN ROYAL LOBBY
-   ========================================= */
-#menu-screen {
-  justify-content: center;
-  align-items: center;
-}
-
+/* LOBBY */
 .royal-card {
-  width: 100%;
+  margin: auto;
+  width: 94%;
   background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%);
   border: 4px solid #facc15;
-  border-radius: 22px;
-  padding: 20px 18px;
+  border-radius: 24px;
+  padding: 20px 16px;
   text-align: center;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55), inset 0 2px 10px rgba(255,255,255,0.25);
+  box-shadow: 0 14px 35px rgba(0,0,0,0.65);
 }
 
-.crown-icon { font-size: 42px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
-
+.crown-icon { font-size: 40px; }
 .royal-title {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: 1px;
-  color: #fef08a;
-  text-shadow: 0 3px 0 #854d0e;
+  color: #facc15;
+  text-shadow: 0 3px 0 #78350f;
 }
-
 .royal-badge {
   display: inline-block;
-  background: #dc2626;
-  color: #fff;
+  background: #0f172a;
+  color: #38bdf8;
   font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
+  font-size: 7px;
   padding: 6px 10px;
-  border-radius: 20px;
-  border: 2px solid #facc15;
+  border-radius: 99px;
+  border: 1px solid #38bdf8;
   margin: 6px 0 12px;
 }
 
 .name-box { text-align: left; margin-bottom: 10px; }
-.name-box label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #fde047;
-  display: block;
-  margin-bottom: 4px;
-}
-
+.name-box label { font-size: 10px; color: #bfdbfe; font-weight: 700; display: block; margin-bottom: 4px; }
 .name-box input, .join-bar input {
   width: 100%;
   padding: 9px 12px;
   border-radius: 12px;
-  border: 2px solid #93c5fd;
+  border: 3px solid #60a5fa;
   background: #0f172a;
   color: #fff;
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
   font-size: 14px;
-  outline: none;
+  font-weight: 700;
+  text-align: center;
 }
 
 .toggles-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 12px;
 }
-
 .toggle-chip {
   flex: 1;
   background: rgba(15, 23, 42, 0.75);
-  border: 2px solid #60a5fa;
+  border: 1.5px solid #60a5fa;
   border-radius: 10px;
-  padding: 6px 8px;
-  font-size: 11px;
+  padding: 6px 4px;
+  font-size: 10px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  cursor: pointer;
+  gap: 4px;
 }
-
-.toggle-chip input { accent-color: #facc15; width: 15px; height: 15px; }
 
 .menu-stack { display: flex; flex-direction: column; gap: 9px; }
 
@@ -123,47 +102,29 @@ body {
   border: none;
   border-radius: 14px;
   font-family: 'Poppins', sans-serif;
-  font-weight: 800;
   font-size: 13px;
+  font-weight: 800;
   color: #fff;
   cursor: pointer;
-  text-shadow: 0 2px 2px rgba(0,0,0,0.35);
-  transition: transform 0.1s;
+  transition: transform 0.08s;
 }
-
-.glossy-btn:active { transform: scale(0.96); }
+.glossy-btn:active { transform: translateY(3px); }
 .btn-green  { background: linear-gradient(180deg, #22c55e, #15803d); box-shadow: 0 4px 0 #14532d; }
 .btn-blue   { background: linear-gradient(180deg, #3b82f6, #1d4ed8); box-shadow: 0 4px 0 #1e3a8a; }
 .btn-gold   { background: linear-gradient(180deg, #f59e0b, #d97706); box-shadow: 0 4px 0 #78350f; }
 .btn-purple { background: linear-gradient(180deg, #a855f7, #7e22ce); box-shadow: 0 4px 0 #4c1d95; }
 .btn-red    { background: linear-gradient(180deg, #ef4444, #b91c1c); box-shadow: 0 4px 0 #7f1d1d; }
 
-.online-box {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 2px dashed rgba(255,255,255,0.25);
-}
+.online-box { margin-top: 10px; padding-top: 10px; border-top: 2px dashed rgba(255,255,255,0.25); }
+.room-card { background: #0f172a; border: 2px solid #facc15; border-radius: 12px; padding: 8px; margin: 8px 0; }
+.room-card strong { display: block; font-size: 20px; color: #facc15; letter-spacing: 3px; }
+.join-bar { display: flex; gap: 6px; margin-top: 8px; }
+.join-bar button { width: 42%; }
+.net-msg { font-size: 10px; color: #fde047; margin-top: 5px; }
 
-.room-card {
-  background: #0f172a;
-  border: 2px solid #facc15;
-  border-radius: 12px;
-  padding: 8px;
-  margin: 8px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.room-card strong { font-size: 20px; letter-spacing: 4px; color: #fde047; }
-.join-bar { display: flex; gap: 8px; margin-top: 8px; }
-.join-bar input { text-transform: uppercase; text-align: center; }
-.net-msg { font-size: 11px; color: #fde047; margin-top: 6px; }
-
-/* =========================================
-   LUDO KING GAME HUD & WOODEN BOARD
-   ========================================= */
+/* HUD */
 .hud-row {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -171,498 +132,200 @@ body {
 }
 
 .lk-profile {
-  position: relative;
   flex: 1;
-  background: rgba(15, 23, 42, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.88);
   border: 2px solid #334155;
   border-radius: 14px;
   padding: 5px 8px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  opacity: 0.65;
-  transition: all 0.25s;
 }
-
 .lk-profile.active-turn {
-  opacity: 1;
   border-color: #facc15;
-  background: rgba(30, 58, 138, 0.95);
-  box-shadow: 0 0 15px rgba(250, 204, 21, 0.65);
-  transform: scale(1.03);
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.7);
 }
-
 .lk-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 13px;
   border: 2px solid #fff;
-  flex-shrink: 0;
 }
-
 .lk-info { flex: 1; overflow: hidden; }
-.lk-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lk-sub { font-size: 10px; color: #cbd5e1; }
+.lk-name { font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lk-sub  { font-size: 9px; color: #94a3b8; font-weight: 700; }
 
-.emote-bubble {
-  position: absolute;
-  top: -14px;
-  right: 8px;
-  background: #ffffff;
-  color: #0f172a;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 11px;
-  padding: 4px 7px;
+.mid-controls { display: flex; gap: 4px; }
+.sound-pill {
+  background: #1e293b;
+  border: 2px solid #facc15;
+  color: #fff;
   border-radius: 10px;
-  border: 2px solid #0f172a;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.45);
-  z-index: 30;
-  animation: popEmote 0.25s ease-out;
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-@keyframes popEmote {
-  0% { transform: scale(0.3) translateY(8px); }
-  100% { transform: scale(1) translateY(0); }
+/* 3D BOARD CONTAINER */
+.wooden-frame {
+  position: relative;
+  width: min(94vw, 395px);
+  height: min(94vw, 395px);
+  background: #0f172a;
+  border: 6px solid #b45309;
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.75);
+  overflow: hidden;
 }
 
-.mid-controls {
+.wooden-frame canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.lk-toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.94);
+  color: #facc15;
+  border: 2px solid #facc15;
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  z-index: 15;
+}
+
+/* 3D DICE */
+.center-dice-dock {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
 }
-
-.sound-pill {
-  background: #1e293b;
-  border: 2px solid #facc15;
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  font-size: 14px;
-  color: #fff;
-  cursor: pointer;
-}
-
-.turn-num {
+.turn-pill, .hint-pill {
   font-size: 9px;
   font-weight: 800;
-  color: #fde047;
-  background: rgba(15, 23, 42, 0.8);
-  padding: 1px 6px;
-  border-radius: 8px;
-}
-
-.wooden-frame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background: #78350f;
-  padding: 6px;
-  border-radius: 16px;
-  border: 3px solid #facc15;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
-}
-
-#ludo-canvas {
-  width: 100%;
-  height: 100%;
-  background: #fff;
-  border-radius: 10px;
-  display: block;
-}
-
-.memory-pill {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.95);
-  color: #fde047;
-  border: 2px solid #facc15;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  padding: 7px 10px;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.65);
-  z-index: 20;
-  white-space: nowrap;
-  animation: pulseMem 0.8s infinite alternate;
-}
-
-@keyframes pulseMem {
-  from { transform: translateX(-50%) scale(1); }
-  to   { transform: translateX(-50%) scale(1.05); }
-}
-
-.lk-toast {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: linear-gradient(180deg, #facc15, #eab308);
-  color: #1e1b4b;
-  font-weight: 800;
-  font-size: 13px;
-  padding: 9px 16px;
-  border-radius: 20px;
-  border: 3px solid #fff;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.55);
-  z-index: 25;
-  pointer-events: none;
-  white-space: nowrap;
-}
-
-/* LIVE EMOTE BAR */
-.emote-bar {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.emote-bar button {
-  background: rgba(15, 23, 42, 0.85);
-  border: 2px solid #60a5fa;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.emote-bar button:active { transform: scale(0.9); background: #1d4ed8; }
-
-/* =========================================
-   3D LUDO KING DICE CUBE
-   ========================================= */
-.center-dice-dock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 100px;
-}
-
-.turn-pill {
-  font-size: 9px;
-  font-weight: 800;
-  background: #facc15;
-  color: #0f172a;
+  background: #0f172a;
   padding: 2px 8px;
-  border-radius: 10px;
-  margin-bottom: 4px;
+  border-radius: 99px;
+  border: 1.5px solid #38bdf8;
+  color: #e0f2fe;
 }
+.hint-pill { border-color: #facc15; color: #fef08a; }
 
-.dice-scene {
-  width: 50px;
-  height: 50px;
-  perspective: 300px;
-  cursor: pointer;
-}
-
+.dice-scene { width: 46px; height: 46px; perspective: 240px; cursor: pointer; }
 .cube {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  width: 100%; height: 100%; position: relative;
+  transform-style: preserve-3d; transition: transform 0.32s ease-out;
 }
-
 .cube.rolling { animation: spinDice 0.35s linear infinite; }
-
 @keyframes spinDice {
-  0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
-  50%  { transform: rotateX(180deg) rotateY(220deg) rotateZ(90deg); }
-  100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
 }
 
 .face {
-  position: absolute;
-  width: 50px;
-  height: 50px;
+  position: absolute; width: 46px; height: 46px;
   background: linear-gradient(145deg, #ffffff, #e2e8f0);
-  border: 2px solid #94a3b8;
-  border-radius: 10px;
-  box-shadow: inset 0 0 6px rgba(0,0,0,0.15);
-  display: grid;
+  border: 2px solid #94a3b8; border-radius: 10px;
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
   padding: 6px;
 }
+.dot { width: 8px; height: 8px; background: #dc2626; border-radius: 50%; margin: auto; }
+.f1 .dot { grid-area: 2 / 2; width: 11px; height: 11px; }
+.f2 .dot:nth-child(1) { grid-area: 1 / 1; } .f2 .dot:nth-child(2) { grid-area: 3 / 3; }
+.f3 .dot:nth-child(1) { grid-area: 1 / 1; } .f3 .dot:nth-child(2) { grid-area: 2 / 2; } .f3 .dot:nth-child(3) { grid-area: 3 / 3; }
+.f4 .dot:nth-child(1) { grid-area: 1 / 1; } .f4 .dot:nth-child(2) { grid-area: 1 / 3; } .f4 .dot:nth-child(3) { grid-area: 3 / 1; } .f4 .dot:nth-child(4) { grid-area: 3 / 3; }
+.f5 .dot:nth-child(1) { grid-area: 1 / 1; } .f5 .dot:nth-child(2) { grid-area: 1 / 3; } .f5 .dot:nth-child(3) { grid-area: 2 / 2; } .f5 .dot:nth-child(4) { grid-area: 3 / 1; } .f5 .dot:nth-child(5) { grid-area: 3 / 3; }
+.f6 .dot:nth-child(1) { grid-area: 1 / 1; } .f6 .dot:nth-child(2) { grid-area: 1 / 3; } .f6 .dot:nth-child(3) { grid-area: 2 / 1; } .f6 .dot:nth-child(4) { grid-area: 2 / 3; } .f6 .dot:nth-child(5) { grid-area: 3 / 1; } .f6 .dot:nth-child(6) { grid-area: 3 / 3; }
 
-.dot {
-  width: 9px;
-  height: 9px;
-  background: #dc2626;
-  border-radius: 50%;
-  align-self: center;
-  justify-self: center;
+.f1 { transform: rotateY(0deg) translateZ(23px); }
+.f6 { transform: rotateY(180deg) translateZ(23px); }
+.f2 { transform: rotateY(90deg) translateZ(23px); }
+.f5 { transform: rotateY(-90deg) translateZ(23px); }
+.f3 { transform: rotateX(90deg) translateZ(23px); }
+.f4 { transform: rotateX(-90deg) translateZ(23px); }
+
+.cube.show-1 { transform: rotateY(0deg); }
+.cube.show-6 { transform: rotateY(180deg); }
+.cube.show-2 { transform: rotateY(-90deg); }
+.cube.show-5 { transform: rotateY(90deg); }
+.cube.show-3 { transform: rotateX(-90deg); }
+.cube.show-4 { transform: rotateX(90deg); }
+
+/* VS SPLASH */
+.vs-splash {
+  position: fixed; inset: 0; background: rgba(5, 7, 15, 0.94);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  z-index: 120; font-family: 'Press Start 2P', monospace;
 }
+.vs-band {
+  width: 110%; padding: 14px; text-align: center; font-size: 13px; color: #fff;
+  border-top: 4px solid #facc15; border-bottom: 4px solid #facc15;
+  transform: rotate(-4deg);
+}
+.vs-emblem { font-size: 34px; color: #facc15; text-shadow: 4px 4px 0 #ef4444; margin: 16px 0; }
 
-.f1 { transform: rotateY(0deg) translateZ(25px); grid-template: 1fr / 1fr; }
-.f1 .dot { width: 13px; height: 13px; }
-.f2 { transform: rotateY(90deg) translateZ(25px); grid-template: 1fr 1fr / 1fr 1fr; }
-.f2 .dot:nth-child(1) { grid-area: 1 / 1; }
-.f2 .dot:nth-child(2) { grid-area: 2 / 2; }
-.f3 { transform: rotateY(180deg) translateZ(25px); grid-template: 1fr 1fr 1fr / 1fr 1fr 1fr; }
-.f3 .dot:nth-child(1) { grid-area: 1 / 1; }
-.f3 .dot:nth-child(2) { grid-area: 2 / 2; }
-.f3 .dot:nth-child(3) { grid-area: 3 / 3; }
-.f4 { transform: rotateY(-90deg) translateZ(25px); grid-template: 1fr 1fr / 1fr 1fr; }
-.f5 { transform: rotateX(90deg) translateZ(25px); grid-template: 1fr 1fr 1fr / 1fr 1fr 1fr; }
-.f5 .dot:nth-child(1) { grid-area: 1 / 1; }
-.f5 .dot:nth-child(2) { grid-area: 1 / 3; }
-.f5 .dot:nth-child(3) { grid-area: 2 / 2; }
-.f5 .dot:nth-child(4) { grid-area: 3 / 1; }
-.f5 .dot:nth-child(5) { grid-area: 3 / 3; }
-.f6 { transform: rotateX(-90deg) translateZ(25px); grid-template: 1fr 1fr 1fr / 1fr 1fr; }
-.f6 .dot { background: #1e293b; }
-
-.cube.show-1 { transform: rotateX(0deg) rotateY(0deg); }
-.cube.show-2 { transform: rotateX(0deg) rotateY(-90deg); }
-.cube.show-3 { transform: rotateX(0deg) rotateY(-180deg); }
-.cube.show-4 { transform: rotateX(0deg) rotateY(90deg); }
-.cube.show-5 { transform: rotateX(-90deg) rotateY(0deg); }
-.cube.show-6 { transform: rotateX(90deg) rotateY(0deg); }
-
-.hint-pill { font-size: 9px; color: #fde047; font-weight: 700; margin-top: 3px; }
-
-/* =========================================
-   PURE 8-BIT RETRO PIXEL BATTLE WINDOW
-   ========================================= */
+/* REAL-TIME 2D FIGHT ARENA */
 .retro-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.88);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  z-index: 99;
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.88);
+  display: flex; justify-content: center; align-items: center; padding: 8px; z-index: 100;
 }
-
 .retro-console {
-  position: relative;
-  width: 100%;
-  max-width: 410px;
-  background: #14141f;
-  border: 4px solid #ffffff;
-  box-shadow: 0 0 0 4px #000, 0 0 0 8px #ef4444, 0 18px 40px rgba(0,0,0,0.9);
-  padding: 10px;
+  position: relative; width: 100%; max-width: 420px; background: #111827;
+  border: 4px solid #facc15; padding: 8px;
   font-family: 'Press Start 2P', monospace;
-  color: #fff;
-  overflow: hidden;
 }
-
-.crt-scanlines {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 5;
-}
-
 .retro-top-bar {
-  background: #b91c1c;
-  border: 2px solid #facc15;
-  color: #fef08a;
-  font-size: 9px;
-  text-align: center;
-  padding: 6px;
-  margin-bottom: 8px;
+  background: #dc2626; color: #fff; text-align: center; font-size: 9px;
+  padding: 5px; border: 2px solid #fff; margin-bottom: 6px;
 }
-
-.retro-hp-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 7px;
-}
-
-.retro-stat-box {
-  width: 44%;
-  background: #1f2438;
-  border: 2px solid #fff;
-  padding: 5px;
-}
-
-.r-name { font-size: 7px; color: #fde047; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.r-hp-track { width: 100%; height: 9px; background: #3f1d2e; border: 2px solid #fff; margin-bottom: 3px; }
-.r-hp-fill { height: 100%; width: 100%; background: #22c55e; transition: width 0.25s steps(8); }
-
-.r-rage-track { width: 100%; height: 6px; background: #1e1b4b; border: 1px solid #93c5fd; }
-.r-rage-fill { height: 100%; width: 0%; background: #f59e0b; transition: width 0.25s steps(6); }
-
-.r-hp-num { font-size: 6px; margin-top: 4px; color: #e2e8f0; }
-.r-vs { font-size: 9px; color: #ef4444; }
+.retro-hp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.retro-stat-box { flex: 1; background: #1f2937; border: 2px solid #fff; padding: 5px; }
+.r-name { font-size: 8px; color: #fef08a; margin-bottom: 4px; }
+.r-hp-track { height: 10px; background: #450a0a; border: 1.5px solid #fff; margin-bottom: 3px; }
+.r-hp-fill { height: 100%; width: 100%; background: #22c55e; transition: width 0.1s; }
+.r-rage-track { height: 5px; background: #1e1b4b; border: 1px solid #94a3b8; }
+.r-rage-fill { height: 100%; width: 0%; background: #facc15; }
+.r-vs { font-size: 10px; color: #ef4444; }
 
 .pixel-stage-frame {
-  width: 100%;
-  border: 3px solid #facc15;
-  background: #090d16;
-  margin-bottom: 7px;
+  border: 3px solid #fff; background: #000; margin-bottom: 6px;
 }
-
-#battle-canvas { width: 100%; height: auto; display: block; image-rendering: pixelated; }
-
+#battle-canvas {
+  width: 100%; height: auto; display: block; image-rendering: pixelated;
+}
 .retro-dialogue {
-  background: #0a0a12;
-  border: 3px solid #fff;
-  padding: 8px;
-  font-size: 7.5px;
-  line-height: 1.45;
-  color: #4ade80;
-  min-height: 40px;
-  margin-bottom: 8px;
+  background: #0f172a; border: 2px solid #38bdf8; color: #e0f2fe;
+  font-size: 8px; padding: 6px; text-align: center; margin-bottom: 8px;
 }
 
-.retro-btn-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+/* ARCADE FIGHT CONTROLLER */
+.fight-pad {
+  display: flex; justify-content: space-between; gap: 8px;
 }
-
-.arcade-btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  padding: 9px 6px;
-  border: 2px solid #fff;
-  color: #fff;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);
+.dpad-group, .atk-group {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; flex: 1;
 }
-
-.arcade-btn small { font-size: 6px; color: #fef08a; }
-.blue-arc  { background: #1d4ed8; }
-.red-arc   { background: #dc2626; }
-.green-arc { background: #15803d; }
-.gold-arc  { background: linear-gradient(180deg, #f59e0b, #b45309); border-color: #fef08a; }
-.arcade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-.hit-shake { animation: retroShake 0.25s steps(4); }
-
-@keyframes retroShake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(-6px, 2px); }
-  50% { transform: translate(6px, -2px); }
-  75% { transform: translate(-4px, -2px); }
+.pad-btn {
+  background: #1e293b; border: 2px solid #fff; color: #fff;
+  font-family: 'Press Start 2P', monospace; font-size: 8px;
+  padding: 12px 4px; cursor: pointer; touch-action: manipulation;
 }
-
-/* =========================================
-   VS CLASH INTRO SPLASH & TIMING REFLEX BAR
-   ========================================= */
-.vs-splash {
-  position: fixed;
-  inset: 0;
-  background: rgba(5, 7, 15, 0.92);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 120;
-  font-family: 'Press Start 2P', monospace;
-  overflow: hidden;
-  animation: flashScreen 0.35s steps(3);
-}
-
-@keyframes flashScreen {
-  0%   { background: #ffffff; }
-  50%  { background: #ef4444; }
-  100% { background: rgba(5, 7, 15, 0.92); }
-}
-
-.vs-band {
-  width: 110%;
-  padding: 16px;
-  text-align: center;
-  font-size: 14px;
-  color: #fff;
-  border-top: 4px solid #facc15;
-  border-bottom: 4px solid #facc15;
-  text-shadow: 3px 3px 0 #000;
-}
-
-.top-band {
-  background: #dc2626;
-  transform: rotate(-4deg);
-  animation: slideLeft 0.35s ease-out;
-}
-
-.bot-band {
-  background: #1d4ed8;
-  transform: rotate(-4deg);
-  animation: slideRight 0.35s ease-out;
-}
-
-.vs-emblem {
-  font-size: 38px;
-  color: #facc15;
-  text-shadow: 4px 4px 0 #ef4444, -2px -2px 0 #000;
-  margin: 18px 0;
-  animation: popEmote 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
-}
-
-@keyframes slideLeft {
-  from { transform: translateX(-100%) rotate(-4deg); }
-  to   { transform: translateX(0) rotate(-4deg); }
-}
-
-@keyframes slideRight {
-  from { transform: translateX(100%) rotate(-4deg); }
-  to   { transform: translateX(0) rotate(-4deg); }
-}
-
-/* REAL-TIME TIMING REFLEX BAR */
-.timing-box {
-  background: #0f172a;
-  border: 3px solid #facc15;
-  padding: 8px;
-  margin-bottom: 8px;
-  cursor: pointer;
-  animation: pulseMem 0.4s infinite alternate;
-}
-
-.timing-label {
-  font-size: 7px;
-  color: #fde047;
-  text-align: center;
-  margin-bottom: 6px;
-}
-
-.timing-track {
-  position: relative;
-  width: 100%;
-  height: 18px;
-  background: #1e293b;
-  border: 2px solid #fff;
-  overflow: hidden;
-}
-
-.timing-gold-zone {
-  position: absolute;
-  left: 38%;
-  width: 24%;
-  height: 100%;
-  background: linear-gradient(90deg, #f59e0b, #fef08a, #f59e0b);
-  border-left: 2px solid #fff;
-  border-right: 2px solid #fff;
-}
-
-.timing-cursor {
-  position: absolute;
-  top: 0;
-  left: 0%;
-  width: 8px;
-  height: 100%;
-  background: #ef4444;
-  border: 1px solid #fff;
-  box-shadow: 0 0 8px #ef4444;
-}
+.pad-btn:active { background: #facc15; color: #000; }
+.jump-btn { grid-column: span 2; background: #0369a1; }
+.punch-btn { background: #1d4ed8; }
+.kick-btn  { background: #b91c1c; }
+.beam-btn  { grid-column: span 2; background: #d97706; }
+.beam-btn:disabled { opacity: 0.4; }
