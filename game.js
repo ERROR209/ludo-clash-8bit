@@ -1,8 +1,9 @@
 // ==========================================
-// 1. AUDIO ENGINE (MODERN LUDO + 8-BIT BATTLE)
+// 1. AUDIO ENGINE + 8-BIT CHIPTUNE BATTLE MUSIC
 // ==========================================
 let soundEnabled = true;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let bgmInterval = null;
 
 function playTone(freq, type = 'sine', duration = 0.12, delay = 0, vol = 0.12) {
   if (!soundEnabled) return;
@@ -19,26 +20,55 @@ function playTone(freq, type = 'sine', duration = 0.12, delay = 0, vol = 0.12) {
   osc.stop(audioCtx.currentTime + delay + duration);
 }
 
+function vibrate(ms) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+function startBattleBGM() {
+  stopBattleBGM();
+  if (!soundEnabled) return;
+  const bassLine = [110, 110, 146.8, 130.8, 110, 110, 164.8, 146.8];
+  const leadLine = [440, 0, 523.2, 587.3, 659.2, 587.3, 523.2, 392.0];
+  let step = 0;
+  bgmInterval = setInterval(() => {
+    if (!soundEnabled || state.phase !== 'BATTLE') return;
+    const b = bassLine[step % bassLine.length];
+    const l = leadLine[step % leadLine.length];
+    if (b) playTone(b, 'triangle', 0.14, 0, 0.07);
+    if (l) playTone(l, 'square', 0.11, 0, 0.045);
+    step++;
+  }, 170);
+}
+
+function stopBattleBGM() {
+  if (bgmInterval) clearInterval(bgmInterval);
+  bgmInterval = null;
+}
+
 const SFX = {
-  dice: () => { [320, 420, 520, 640].forEach((f, i) => playTone(f, 'triangle', 0.06, i * 0.05, 0.14)); },
-  hop:  () => playTone(580, 'sine', 0.07, 0, 0.15),
+  dice: () => { vibrate(25); [320, 440, 560, 680].forEach((f, i) => playTone(f, 'triangle', 0.06, i * 0.045, 0.15)); },
+  hop:  () => { vibrate(12); playTone(560, 'sine', 0.06, 0, 0.14); playTone(720, 'sine', 0.05, 0.04, 0.1); },
   safe: () => { [523, 659, 784].forEach((f, i) => playTone(f, 'sine', 0.14, i * 0.07, 0.14)); },
   tick: () => playTone(740, 'square', 0.06, 0, 0.1),
-  placeTrap: () => { playTone(380, 'square', 0.07); playTone(520, 'square', 0.09, 0.05); },
-  powerUp: () => { [523, 659, 784, 1046].forEach((f, i) => playTone(f, 'square', 0.1, i * 0.06, 0.15)); },
-  bomb: () => { [220, 150, 95, 65].forEach((f, i) => playTone(f, 'sawtooth', 0.16, i * 0.07, 0.2)); },
+  placeTrap: () => { vibrate(20); playTone(380, 'square', 0.07); playTone(520, 'square', 0.09, 0.05); },
+  powerUp: () => { vibrate([30, 30, 50]); [523, 659, 784, 1046].forEach((f, i) => playTone(f, 'square', 0.1, i * 0.06, 0.15)); },
+  bomb: () => { vibrate(120); [220, 150, 95, 65].forEach((f, i) => playTone(f, 'sawtooth', 0.16, i * 0.07, 0.2)); },
   battleStart: () => {
-    [220, 261, 329, 440, 392, 523, 659].forEach((f, i) => playTone(f, 'square', 0.09, i * 0.065, 0.13));
+    vibrate([60, 40, 90]);
+    [220, 277, 330, 440, 392, 523, 659, 880].forEach((f, i) => playTone(f, 'square', 0.09, i * 0.06, 0.15));
   },
   slash: () => {
-    playTone(600, 'square', 0.05, 0, 0.14);
-    playTone(150, 'sawtooth', 0.18, 0.04, 0.16);
+    vibrate(45);
+    playTone(680, 'square', 0.05, 0, 0.15);
+    playTone(150, 'sawtooth', 0.18, 0.04, 0.18);
   },
   smash: () => {
-    playTone(110, 'sawtooth', 0.25, 0, 0.2);
-    playTone(75, 'square', 0.28, 0.05, 0.2);
+    vibrate(85);
+    playTone(110, 'sawtooth', 0.25, 0, 0.22);
+    playTone(75, 'square', 0.28, 0.05, 0.22);
   },
   ult: () => {
+    vibrate([80, 40, 140]);
     [330, 440, 554, 659, 880, 140, 90].forEach((f, i) => playTone(f, 'sawtooth', 0.14, i * 0.05, 0.22));
   },
   miss: () => {
@@ -49,6 +79,7 @@ const SFX = {
     [440, 554, 659].forEach((f, i) => playTone(f, 'square', 0.09, i * 0.06, 0.12));
   },
   win: () => {
+    vibrate([100, 50, 100, 50, 200]);
     [523, 659, 784, 1046, 784, 1046].forEach((f, i) => playTone(f, 'triangle', 0.16, i * 0.11, 0.16));
   }
 };
@@ -56,12 +87,15 @@ const SFX = {
 function toggleSound() {
   soundEnabled = !soundEnabled;
   document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇';
+  if (!soundEnabled) stopBattleBGM();
+  else if (state.phase === 'BATTLE') startBattleBGM();
 }
 
 // ==========================================
 // 2. BOARD GEOMETRY, CLASSES & TILE POOL
 // ==========================================
 const COLORS = ['#dc2626', '#16a34a', '#eab308', '#2563eb'];
+const DARK_COLORS = ['#991b1b', '#14532d', '#a16207', '#1e3a8a'];
 const LIGHT_COLORS = ['#fca5a5', '#86efac', '#fef08a', '#93c5fd'];
 const COLOR_NAMES = ['RED', 'GREEN', 'YELLOW', 'BLUE'];
 
@@ -139,13 +173,14 @@ let isHost = true;
 let peer = null;
 let connections = [];
 let hostConn = null;
+let hoppingToken = null; // { pIdx, tokenId, progress } for bounce animation
 
 let state = {
   players: [],
   turn: 0,
   turnCount: 1,
   dice: 1,
-  phase: 'ROLL', // 'PLACE_TRAPS', 'MEMORIZE', 'ROLL', 'SELECT', 'ANIM', 'BATTLE'
+  phase: 'ROLL',
   memorySeconds: 5,
   safeIndices: [...INITIAL_SAFE_INDICES],
   hiddenTiles: {},
@@ -167,7 +202,7 @@ function createInitialState(playerConfigs, optTraps, optSuddenDeath) {
         id: tIdx,
         steps: -1,
         role: tIdx,
-        kills: 0, // Kill-Evolution counter (0 = LVL 1, 1 = LVL 2, 2+ = LVL 3 BOSS)
+        kills: 0,
         shield: false,
         rage: false
       }))
@@ -262,8 +297,7 @@ function joinOnlineGame() {
         state = data.state;
         switchToGameScreen();
         if (state.phase === 'BATTLE' && !wasBattle) {
-          SFX.battleStart();
-          startBattleCanvasLoop();
+          triggerVSEncounterIntro();
         }
         renderAll();
       } else if (data.type === 'BATTLE_FX') {
@@ -314,7 +348,7 @@ function handleRemoteAction(seat, data) {
   } else if (data.action === 'MOVE' && state.turn === seat && state.phase === 'SELECT') {
     executeTokenMove(seat, data.tokenId);
   } else if (data.action === 'BATTLE_MOVE' && state.phase === 'BATTLE') {
-    processBattleInput(seat, data.move);
+    processBattleInput(seat, data.move, data.mult || 1);
   } else if (data.action === 'EMOTE') {
     displayEmoteBubble(seat, data.emoji);
     connections.forEach(c => { if (c.open) c.send({ type: 'EMOTE', seat, emoji: data.emoji }); });
@@ -372,7 +406,6 @@ function placeSecretTrapAt(seat, trackIdx) {
   if (state.phase !== 'PLACE_TRAPS' || state.trapPlacingSeat !== seat) return;
   if (INITIAL_SAFE_INDICES.includes(trackIdx) || state.hiddenTiles[trackIdx]) return;
 
-  // Alternate between Bomb (-3) and Warp (Back to Start)
   const trapObj = (state.trapsLeftToPlace === 2)
     ? { type: 'bomb', icon: '💣', label: 'PLAYER BOMB -3!', bg: '#fed7aa', revealed: true, used: false, owner: seat }
     : { type: 'warp', icon: '🌀', label: 'PLAYER WARP TRAP!', bg: '#e9d5ff', revealed: true, used: false, owner: seat };
@@ -382,12 +415,10 @@ function placeSecretTrapAt(seat, trackIdx) {
   SFX.placeTrap();
 
   if (state.trapsLeftToPlace <= 0) {
-    // Move to next active player
     let nextSeat = seat + 1;
     while (nextSeat < 4 && !state.players[nextSeat].active) nextSeat++;
 
     if (nextSeat >= 4) {
-      // All players placed traps! Add random power-ups & start 5s Memory Scan!
       state.hiddenTiles = generateRandomHiddenTiles(state.hiddenTiles);
       startMemoryCountdown();
       return;
@@ -471,7 +502,7 @@ function displayEmoteBubble(seat, emoji) {
 }
 
 // ==========================================
-// 7. 3D DICE, MYSTERY CHESTS & SUDDEN DEATH
+// 7. 3D DICE & LUDO KING JUMP MOVEMENT
 // ==========================================
 function canIControlCurrentTurn() {
   const curP = state.players[state.turn];
@@ -510,14 +541,14 @@ function executeRoll() {
       state.phase = 'SELECT';
       renderAll();
       broadcastState();
-      setTimeout(() => executeTokenMove(state.turn, validTokens[0].id), 300);
+      setTimeout(() => executeTokenMove(state.turn, validTokens[0].id), 280);
     } else {
       state.phase = 'SELECT';
       renderAll();
       broadcastState();
       if (state.players[state.turn].isBot) {
         const pick = chooseSmartBotToken(state.turn, validTokens, roll);
-        setTimeout(() => executeTokenMove(state.turn, pick.id), 550);
+        setTimeout(() => executeTokenMove(state.turn, pick.id), 500);
       }
     }
   }, 420);
@@ -557,12 +588,11 @@ function nextTurn(bonusRoll) {
   broadcastState();
 
   if (isHost && state.players[state.turn].isBot) {
-    setTimeout(executeRoll, 700);
+    setTimeout(executeRoll, 680);
   }
 }
 
 function handleWorldEvents() {
-  // Spawn Mystery Chest every 6 turns
   if (state.turnCount % 6 === 0 && state.mysteryChestIdx === -1) {
     const idx = Math.floor(Math.random() * 52);
     if (!state.safeIndices.includes(idx)) {
@@ -570,8 +600,6 @@ function handleWorldEvents() {
       showToast('🎁 MYSTERY CHEST SPAWNED!');
     }
   }
-
-  // Sudden Death: Remove Safe Stars starting Turn 20!
   if (state.suddenDeathEnabled && state.turnCount >= 20 && state.turnCount % 4 === 0) {
     if (state.safeIndices.length > 0) {
       state.safeIndices.pop();
@@ -597,10 +625,15 @@ function executeTokenMove(pIdx, tokenId) {
 
   if (token.steps === -1) {
     token.steps = 0;
+    hoppingToken = { pIdx, tokenId };
     SFX.hop();
     renderAll();
     broadcastState();
-    setTimeout(() => finishTokenMove(pIdx, token, dice), 260);
+    setTimeout(() => {
+      hoppingToken = null;
+      renderAll();
+      finishTokenMove(pIdx, token, dice);
+    }, 240);
     return;
   }
 
@@ -608,15 +641,21 @@ function executeTokenMove(pIdx, tokenId) {
   const hopInterval = setInterval(() => {
     token.steps += 1;
     stepsLeft -= 1;
+    hoppingToken = { pIdx, tokenId };
     SFX.hop();
     renderAll();
     broadcastState();
+
+    setTimeout(() => {
+      hoppingToken = null;
+      renderAll();
+    }, 85);
 
     if (stepsLeft <= 0) {
       clearInterval(hopInterval);
       setTimeout(() => finishTokenMove(pIdx, token, dice), 200);
     }
-  }, 150);
+  }, 155);
 }
 
 function finishTokenMove(pIdx, token, dice) {
@@ -635,20 +674,18 @@ function finishTokenMove(pIdx, token, dice) {
 
   const gIdx = getGlobalTrackIndex(pIdx, token.steps);
 
-  // Check Mystery Chest Pickup
   if (gIdx !== -1 && gIdx === state.mysteryChestIdx) {
     state.mysteryChestIdx = -1;
     SFX.powerUp();
     token.shield = true;
     token.rage = true;
-    showToast('🎁 CHEST: SHIELD + RAGE + BONUS ROLL!');
+    showToast('🎁 CHEST: SHIELD + RAGE +1 ROLL!');
     renderAll();
     broadcastState();
     setTimeout(() => nextTurn(true), 800);
     return;
   }
 
-  // Check Hidden Trap or Power-Up Tile
   if (gIdx !== -1 && state.hiddenTiles[gIdx] && !state.hiddenTiles[gIdx].used) {
     const hTile = state.hiddenTiles[gIdx];
     hTile.revealed = true;
@@ -720,9 +757,14 @@ function findEnemyAtGlobalIndex(myPIdx, gIdx) {
 }
 
 // ==========================================
-// 8. 8-BIT BATTLE (KILL-EVOLUTION + RAGE ULT + COUNTER-CRIT)
+// 8. VS ENCOUNTER INTRO + TIMED REFLEX BATTLE
 // ==========================================
 let battleAnimId = null;
+let timingAnimId = null;
+let pendingAttackType = null;
+let timingPos = 0;
+let timingDir = 1;
+
 let battleVisual = {
   tick: 0,
   atkOffsetX: 0,
@@ -730,18 +772,39 @@ let battleVisual = {
   atkFlash: 0,
   defFlash: 0,
   ultFlash: 0,
+  projectiles: [], // { x, y, vx, color, size }
   sparks: [],
   floatingText: null
 };
 
-function startEightBitBattle(atkP, atkT, defP, defT) {
+function triggerVSEncounterIntro() {
+  const b = state.battle;
+  if (!b) return;
+  const aClass = WARRIOR_CLASSES[state.players[b.atkP].tokens[b.atkT].role];
+  const dClass = WARRIOR_CLASSES[state.players[b.defP].tokens[b.defT].role];
+
   SFX.battleStart();
+  const splash = document.getElementById('vs-splash');
+  document.getElementById('vs-atk-banner').innerText = `${COLOR_NAMES[b.atkP]} ${aClass.name}`;
+  document.getElementById('vs-atk-banner').style.background = COLORS[b.atkP];
+  document.getElementById('vs-def-banner').innerText = `${COLOR_NAMES[b.defP]} ${dClass.name}`;
+  document.getElementById('vs-def-banner').style.background = COLORS[b.defP];
+  splash.classList.remove('hidden');
+
+  setTimeout(() => {
+    splash.classList.add('hidden');
+    startBattleCanvasLoop();
+    startBattleBGM();
+    renderAll();
+  }, 1150);
+}
+
+function startEightBitBattle(atkP, atkT, defP, defT) {
   const aToken = state.players[atkP].tokens[atkT];
   const dToken = state.players[defP].tokens[defT];
   const aClass = WARRIOR_CLASSES[aToken.role];
   const dClass = WARRIOR_CLASSES[dToken.role];
 
-  // Kill-Evolution Stat Scaling!
   const aLvlBonusHp = Math.min(2, aToken.kills) * 25;
   const dLvlBonusHp = Math.min(2, dToken.kills) * 25;
 
@@ -762,48 +825,93 @@ function startEightBitBattle(atkP, atkT, defP, defT) {
     activeFighter: atkP,
     atkGuard: false,
     defGuard: false,
-    log: `${COLOR_NAMES[atkP]} LVL${Math.min(3, aToken.kills+1)} vs ${COLOR_NAMES[defP]} LVL${Math.min(3, dToken.kills+1)}!`
+    log: `${COLOR_NAMES[atkP]} ${aClass.name} ambushed ${COLOR_NAMES[defP]} ${dClass.name}!`
   };
 
   aToken.rage = false;
   dToken.rage = false;
 
-  battleVisual = { tick: 0, atkOffsetX: 0, defOffsetX: 0, atkFlash: 0, defFlash: 0, ultFlash: 0, sparks: [], floatingText: null };
-  startBattleCanvasLoop();
+  battleVisual = { tick: 0, atkOffsetX: 0, defOffsetX: 0, atkFlash: 0, defFlash: 0, ultFlash: 0, projectiles: [], sparks: [], floatingText: null };
+  triggerVSEncounterIntro();
   renderAll();
   broadcastState();
-  checkBotBattleTurn();
+  setTimeout(checkBotBattleTurn, 1200);
 }
 
-function submitBattleMove(move) {
+// Step 1 of Attack: Start Real-Time Reflex Timing Bar!
+function initiateAttack(moveType) {
+  if (state.phase !== 'BATTLE' || !state.battle) return;
+  const b = state.battle;
+  const canControl = !state.players[b.activeFighter].isBot &&
+    (gameMode === 'local' || mySeat === b.activeFighter);
+  if (!canControl) return;
+
+  pendingAttackType = moveType;
+  document.getElementById('battle-controls').classList.add('hidden');
+  document.getElementById('timing-box').classList.remove('hidden');
+
+  timingPos = 0;
+  timingDir = 1;
+  const cursor = document.getElementById('timing-cursor');
+
+  if (timingAnimId) cancelAnimationFrame(timingAnimId);
+  function slideCursor() {
+    timingPos += timingDir * 2.8;
+    if (timingPos >= 96) { timingPos = 96; timingDir = -1; }
+    if (timingPos <= 0)  { timingPos = 0;  timingDir = 1; }
+    cursor.style.left = timingPos + '%';
+    timingAnimId = requestAnimationFrame(slideCursor);
+  }
+  slideCursor();
+}
+
+// Step 2 of Attack: Player taps Timing Bar to lock Crit Multiplier!
+function lockTimingStrike() {
+  if (!pendingAttackType) return;
+  cancelAnimationFrame(timingAnimId);
+  timingAnimId = null;
+
+  const move = pendingAttackType;
+  pendingAttackType = null;
+  document.getElementById('timing-box').classList.add('hidden');
+  document.getElementById('battle-controls').classList.remove('hidden');
+
+  // Gold zone is 38% to 62%
+  const isPerfect = (timingPos >= 36 && timingPos <= 64);
+  const mult = isPerfect ? 1.55 : 1.0;
+  submitBattleMove(move, mult);
+}
+
+function submitBattleMove(move, mult = 1.0) {
   if (state.phase !== 'BATTLE' || !state.battle) return;
   const b = state.battle;
   if (gameMode === 'online' && !isHost) {
-    if (mySeat === b.activeFighter) sendActionToHost({ action: 'BATTLE_MOVE', move });
+    if (mySeat === b.activeFighter) sendActionToHost({ action: 'BATTLE_MOVE', move, mult });
     return;
   }
   if (gameMode === 'online' && mySeat !== b.activeFighter) return;
-  processBattleInput(b.activeFighter, move);
+  processBattleInput(b.activeFighter, move, mult);
 }
 
 function applyRemoteBattleFX(fx) {
   if (fx.dash === 'atk') {
-    battleVisual.atkOffsetX = 72;
+    battleVisual.atkOffsetX = 65;
     setTimeout(() => { battleVisual.atkOffsetX = 0; }, 250);
   } else if (fx.dash === 'def') {
-    battleVisual.defOffsetX = -72;
+    battleVisual.defOffsetX = -65;
     setTimeout(() => { battleVisual.defOffsetX = 0; }, 250);
   }
+  if (fx.proj) battleVisual.projectiles.push(fx.proj);
   if (fx.flash === 'def') battleVisual.defFlash = 10;
   if (fx.flash === 'atk') battleVisual.atkFlash = 10;
-  if (fx.ultFlash) battleVisual.ultFlash = 12;
-  if (fx.sparks) spawnHitSparks(fx.sparks.x, fx.sparks.y, fx.sparks.color, fx.sparks.count || 14);
+  if (fx.ultFlash) battleVisual.ultFlash = 14;
+  if (fx.sparks) spawnHitSparks(fx.sparks.x, fx.sparks.y, fx.sparks.color, fx.sparks.count || 16);
   if (fx.float) spawnFloatingText(fx.float.text, fx.float.x, fx.float.y, fx.float.color);
   if (fx.sfx && SFX[fx.sfx]) SFX[fx.sfx]();
   if (fx.shake) triggerArenaShake();
 }
 
-function processBattleInput(seat, move) {
+function processBattleInput(seat, move, mult = 1.0) {
   const b = state.battle;
   if (!b || b.activeFighter !== seat) return;
 
@@ -812,10 +920,11 @@ function processBattleInput(seat, move) {
   const wClass = WARRIOR_CLASSES[actorToken.role];
   const lvlAtkBonus = (actorToken.kills >= 2) ? 10 : (actorToken.kills === 1 ? 5 : 0);
   const rageBuffBonus = (isAtkTurn ? b.atkRageBuff : b.defRageBuff) ? 15 : 0;
+  const isPerfectTiming = (mult > 1.2);
 
   let fx = { dash: isAtkTurn ? 'atk' : 'def' };
-  if (isAtkTurn) battleVisual.atkOffsetX = 72;
-  else battleVisual.defOffsetX = -72;
+  if (isAtkTurn) battleVisual.atkOffsetX = 65;
+  else battleVisual.defOffsetX = -65;
   setTimeout(() => {
     battleVisual.atkOffsetX = 0;
     battleVisual.defOffsetX = 0;
@@ -828,39 +937,43 @@ function processBattleInput(seat, move) {
     if (curRage < 100) return;
 
     if (isAtkTurn) b.atkRageMeter = 0; else b.defRageMeter = 0;
-    let dmg = 75 + lvlAtkBonus + rageBuffBonus;
+    let dmg = Math.floor((72 + lvlAtkBonus + rageBuffBonus) * mult);
     if (isAtkTurn && b.defGuard) { dmg = Math.floor(dmg * 0.5); b.defGuard = false; }
     if (!isAtkTurn && b.atkGuard) { dmg = Math.floor(dmg * 0.5); b.atkGuard = false; }
 
-    battleVisual.ultFlash = 12;
+    battleVisual.ultFlash = 14;
     fx.ultFlash = true;
     fx.sfx = 'ult';
     fx.shake = true;
     SFX.ult();
     triggerArenaShake();
 
+    const proj = { x: isAtkTurn ? 110 : 210, y: 90, vx: isAtkTurn ? 14 : -14, color: '#facc15', size: 18 };
+    battleVisual.projectiles.push(proj);
+    fx.proj = proj;
+
     if (isAtkTurn) {
       b.defHp = Math.max(0, b.defHp - dmg);
       battleVisual.defFlash = 12;
-      spawnHitSparks(225, 95, '#facc15', 28);
+      spawnHitSparks(225, 95, '#facc15', 30);
       spawnFloatingText(`ULT -${dmg}!`, 225, 55, '#facc15');
       fx.flash = 'def';
-      fx.sparks = { x: 225, y: 95, color: '#facc15', count: 28 };
+      fx.sparks = { x: 225, y: 95, color: '#facc15', count: 30 };
       fx.float = { text: `ULT -${dmg}!`, x: 225, y: 55, color: '#facc15' };
     } else {
       b.atkHp = Math.max(0, b.atkHp - dmg);
       battleVisual.atkFlash = 12;
-      spawnHitSparks(95, 95, '#facc15', 28);
+      spawnHitSparks(95, 95, '#facc15', 30);
       spawnFloatingText(`ULT -${dmg}!`, 95, 55, '#facc15');
       fx.flash = 'atk';
-      fx.sparks = { x: 95, y: 95, color: '#facc15', count: 28 };
+      fx.sparks = { x: 95, y: 95, color: '#facc15', count: 30 };
       fx.float = { text: `ULT -${dmg}!`, x: 95, y: 55, color: '#facc15' };
     }
     msg = `🔥 ${wClass.ultName}! ${dmg} ULTIMATE DMG!`;
 
   } else if (move === 'slash' || move === 'smash') {
     const isSmash = (move === 'smash');
-    if (isSmash && Math.random() < 0.30) {
+    if (isSmash && !isPerfectTiming && Math.random() < 0.28) {
       SFX.miss();
       fx.sfx = 'miss';
       msg = `${COLOR_NAMES[seat]} used HEAVY HIT... MISSED!`;
@@ -870,23 +983,23 @@ function processBattleInput(seat, move) {
       if (isAtkTurn) { b.defGuard = false; b.atkCounterReady = false; }
       else { b.atkGuard = false; b.defCounterReady = false; }
     } else {
-      let dmg = isSmash
-        ? 50 + Math.floor(Math.random() * 11) + wClass.atk + lvlAtkBonus + rageBuffBonus
-        : 26 + Math.floor(Math.random() * 9) + wClass.atk + lvlAtkBonus + rageBuffBonus;
+      let baseDmg = isSmash
+        ? 44 + Math.floor(Math.random() * 9) + wClass.atk + lvlAtkBonus + rageBuffBonus
+        : 24 + Math.floor(Math.random() * 7) + wClass.atk + lvlAtkBonus + rageBuffBonus;
 
-      // Guard Counter-Crit Bonus on Slash!
+      let dmg = Math.floor(baseDmg * mult);
+
       let isCounter = false;
       if (!isSmash && isAtkTurn && b.atkCounterReady) {
-        dmg = Math.floor(dmg * 1.5);
+        dmg = Math.floor(dmg * 1.4);
         b.atkCounterReady = false;
         isCounter = true;
       } else if (!isSmash && !isAtkTurn && b.defCounterReady) {
-        dmg = Math.floor(dmg * 1.5);
+        dmg = Math.floor(dmg * 1.4);
         b.defCounterReady = false;
         isCounter = true;
       }
 
-      // Check Enemy Guard & Trigger Enemy Counter-Crit!
       if (isAtkTurn && b.defGuard) {
         dmg = Math.floor(dmg * 0.3);
         b.defGuard = false;
@@ -897,35 +1010,42 @@ function processBattleInput(seat, move) {
         b.atkCounterReady = true;
       }
 
-      // Build Limit Break Rage Meters (+35% attacker, +45% defender)
+      // Fire Energy Wave / Fireball Projectile!
+      const proj = { x: isAtkTurn ? 115 : 205, y: 95, vx: isAtkTurn ? 12 : -12, color: COLORS[seat], size: isSmash ? 14 : 9 };
+      battleVisual.projectiles.push(proj);
+      fx.proj = proj;
+
+      const labelTxt = (isPerfectTiming ? `CRIT -${dmg}!` : (isCounter ? `COUNTER -${dmg}!` : `-${dmg}`));
+      const labelCol = isPerfectTiming ? '#facc15' : (isCounter ? '#38bdf8' : '#ef4444');
+
       if (isAtkTurn) {
         b.defHp = Math.max(0, b.defHp - dmg);
-        b.atkRageMeter = Math.min(100, b.atkRageMeter + 35);
+        b.atkRageMeter = Math.min(100, b.atkRageMeter + (isPerfectTiming ? 45 : 35));
         b.defRageMeter = Math.min(100, b.defRageMeter + 45);
         battleVisual.defFlash = 10;
-        spawnHitSparks(225, 100, COLORS[seat], 14);
-        spawnFloatingText(isCounter ? `COUNTER -${dmg}!` : `-${dmg}`, 225, 60, isCounter ? '#38bdf8' : '#ef4444');
+        spawnHitSparks(225, 100, COLORS[seat], 16);
+        spawnFloatingText(labelTxt, 225, 60, labelCol);
         fx.flash = 'def';
-        fx.sparks = { x: 225, y: 100, color: COLORS[seat], count: 14 };
-        fx.float = { text: isCounter ? `COUNTER -${dmg}!` : `-${dmg}`, x: 225, y: 60, color: isCounter ? '#38bdf8' : '#ef4444' };
+        fx.sparks = { x: 225, y: 100, color: COLORS[seat], count: 16 };
+        fx.float = { text: labelTxt, x: 225, y: 60, color: labelCol };
       } else {
         b.atkHp = Math.max(0, b.atkHp - dmg);
-        b.defRageMeter = Math.min(100, b.defRageMeter + 35);
+        b.defRageMeter = Math.min(100, b.defRageMeter + (isPerfectTiming ? 45 : 35));
         b.atkRageMeter = Math.min(100, b.atkRageMeter + 45);
         battleVisual.atkFlash = 10;
-        spawnHitSparks(95, 100, COLORS[seat], 14);
-        spawnFloatingText(isCounter ? `COUNTER -${dmg}!` : `-${dmg}`, 95, 60, isCounter ? '#38bdf8' : '#ef4444');
+        spawnHitSparks(95, 100, COLORS[seat], 16);
+        spawnFloatingText(labelTxt, 95, 60, labelCol);
         fx.flash = 'atk';
-        fx.sparks = { x: 95, y: 100, color: COLORS[seat], count: 14 };
-        fx.float = { text: isCounter ? `COUNTER -${dmg}!` : `-${dmg}`, x: 95, y: 60, color: isCounter ? '#38bdf8' : '#ef4444' };
+        fx.sparks = { x: 95, y: 100, color: COLORS[seat], count: 16 };
+        fx.float = { text: labelTxt, x: 95, y: 60, color: labelCol };
       }
 
       isSmash ? SFX.smash() : SFX.slash();
       fx.sfx = isSmash ? 'smash' : 'slash';
       fx.shake = true;
-      msg = isCounter
-        ? `⚡ COUNTER-CRIT! ${COLOR_NAMES[seat]} dealt ${dmg} DMG!`
-        : (isSmash ? `💥 CRITICAL HIT! ${dmg} DMG!` : `${COLOR_NAMES[seat]} slashed for ${dmg} DMG!`);
+      msg = isPerfectTiming
+        ? `⚡ PERFECT TIMING CRIT! ${dmg} DMG!`
+        : `${COLOR_NAMES[seat]} hit for ${dmg} DMG!`;
       triggerArenaShake();
     }
   } else if (move === 'guard') {
@@ -950,7 +1070,6 @@ function processBattleInput(seat, move) {
   b.log = msg;
   broadcastBattleFX(fx);
 
-  // Check K.O. & Kill-Evolution Level Up!
   if (b.defHp <= 0 || b.atkHp <= 0) {
     const attackerWon = (b.defHp <= 0);
     const winnerToken = attackerWon
@@ -967,10 +1086,11 @@ function processBattleInput(seat, move) {
 
     setTimeout(() => {
       stopBattleCanvasLoop();
+      stopBattleBGM();
       if (attackerWon) {
         const loser = state.players[b.defP].tokens[b.defT];
         loser.steps = -1;
-        loser.kills = 0; // Reset loser evolution on death
+        loser.kills = 0;
         state.battle = null;
         nextTurn(true);
       } else {
@@ -999,13 +1119,14 @@ function checkBotBattleTurn() {
       const b = state.battle;
       const isAtk = (activeP === b.atkP);
       const rage = isAtk ? b.atkRageMeter : b.defRageMeter;
+      const botCrit = Math.random() < 0.35 ? 1.55 : 1.0;
       if (rage >= 100) {
-        processBattleInput(activeP, 'ult');
+        processBattleInput(activeP, 'ult', botCrit);
         return;
       }
       const moves = ['slash', 'slash', 'smash', 'guard'];
-      processBattleInput(activeP, moves[Math.floor(Math.random() * moves.length)]);
-    }, 900);
+      processBattleInput(activeP, moves[Math.floor(Math.random() * moves.length)], botCrit);
+    }, 950);
   }
 }
 
@@ -1017,12 +1138,12 @@ function triggerArenaShake() {
 }
 
 // ==========================================
-// 9. PIXEL-ART WARRIOR RENDERER (WITH EVOLUTION)
+// 9. HIGH-DETAIL 8-BIT SPRITE & PROJECTILE RENDERER
 // ==========================================
 const bCanvas = document.getElementById('battle-canvas');
 const bCtx = bCanvas.getContext('2d');
 
-function spawnHitSparks(x, y, color, count = 14) {
+function spawnHitSparks(x, y, color, count = 16) {
   for (let i = 0; i < count; i++) {
     battleVisual.sparks.push({
       x, y,
@@ -1035,7 +1156,7 @@ function spawnHitSparks(x, y, color, count = 14) {
 }
 
 function spawnFloatingText(text, x, y, color) {
-  battleVisual.floatingText = { text, x, y, color, life: 30 };
+  battleVisual.floatingText = { text, x, y, color, life: 32 };
 }
 
 function startBattleCanvasLoop() {
@@ -1058,39 +1179,61 @@ function drawPixelBattleStage() {
   const b = state.battle;
   if (!b) return;
 
-  bCtx.fillStyle = '#1e1b4b';
-  bCtx.fillRect(0, 0, 320, 165);
+  // Starry Retro Sky & Temple Pillars
+  bCtx.fillStyle = '#0f0c29';
+  bCtx.fillRect(0, 0, 320, 175);
 
-  bCtx.fillStyle = '#312e81';
-  for (let i = 0; i < 320; i += 32) {
-    bCtx.fillRect(i + 4, 28, 16, 92);
+  bCtx.fillStyle = '#fef08a';
+  for (let i = 0; i < 12; i++) {
+    bCtx.fillRect((i * 29 + battleVisual.tick * 0.2) % 320, (i * 17) % 80, 2, 2);
   }
 
+  bCtx.fillStyle = '#24243e';
+  for (let i = 0; i < 320; i += 40) {
+    bCtx.fillRect(i + 6, 25, 22, 100);
+    bCtx.fillStyle = '#302b63';
+    bCtx.fillRect(i + 10, 25, 6, 100);
+    bCtx.fillStyle = '#24243e';
+  }
+
+  // Pixel Arena Floor
   bCtx.fillStyle = '#374151';
-  bCtx.fillRect(0, 118, 320, 47);
+  bCtx.fillRect(0, 125, 320, 50);
   bCtx.fillStyle = '#facc15';
-  bCtx.fillRect(0, 118, 320, 4);
+  bCtx.fillRect(0, 125, 320, 4);
 
   bCtx.fillStyle = '#1f2937';
   for (let x = 0; x < 320; x += 20) {
-    bCtx.fillRect(x, 128, 10, 10);
-    bCtx.fillRect(x + 10, 144, 10, 10);
+    bCtx.fillRect(x, 134, 10, 10);
+    bCtx.fillRect(x + 10, 150, 10, 10);
   }
 
-  const bob = Math.sin(battleVisual.tick * 0.15) * 2;
+  const bob = Math.sin(battleVisual.tick * 0.16) * 2.5;
 
   const aToken = state.players[b.atkP].tokens[b.atkT];
   if (battleVisual.atkFlash > 0) battleVisual.atkFlash--;
   if (battleVisual.atkFlash % 2 === 0) {
-    drawPixelWarrior(85 + battleVisual.atkOffsetX, 114 + bob, COLORS[b.atkP], LIGHT_COLORS[b.atkP], aToken, true, b.atkGuard, b.atkRageBuff);
+    drawDetailedPixelWarrior(80 + battleVisual.atkOffsetX, 122 + bob, COLORS[b.atkP], LIGHT_COLORS[b.atkP], aToken, true, b.atkGuard, b.atkRageBuff);
   }
 
   const dToken = state.players[b.defP].tokens[b.defT];
   if (battleVisual.defFlash > 0) battleVisual.defFlash--;
   if (battleVisual.defFlash % 2 === 0) {
-    drawPixelWarrior(235 + battleVisual.defOffsetX, 114 - bob, COLORS[b.defP], LIGHT_COLORS[b.defP], dToken, false, b.defGuard, b.defRageBuff);
+    drawDetailedPixelWarrior(240 + battleVisual.defOffsetX, 122 - bob, COLORS[b.defP], LIGHT_COLORS[b.defP], dToken, false, b.defGuard, b.defRageBuff);
   }
 
+  // Energy Slash / Fireball Projectiles
+  battleVisual.projectiles.forEach(p => {
+    bCtx.fillStyle = '#ffffff';
+    bCtx.fillRect(Math.round(p.x - p.size / 2), Math.round(p.y - p.size / 2), p.size, p.size);
+    bCtx.strokeStyle = p.color;
+    bCtx.lineWidth = 3;
+    bCtx.strokeRect(Math.round(p.x - p.size / 2), Math.round(p.y - p.size / 2), p.size, p.size);
+    p.x += p.vx;
+  });
+  battleVisual.projectiles = battleVisual.projectiles.filter(p => p.x > 40 && p.x < 280);
+
+  // Sparks
   battleVisual.sparks.forEach(s => {
     bCtx.fillStyle = s.color;
     bCtx.fillRect(Math.round(s.x), Math.round(s.y), 4, 4);
@@ -1100,6 +1243,7 @@ function drawPixelBattleStage() {
   });
   battleVisual.sparks = battleVisual.sparks.filter(s => s.life > 0);
 
+  // Floating Damage Text
   if (battleVisual.floatingText) {
     const ft = battleVisual.floatingText;
     bCtx.font = 'bold 11px "Press Start 2P", monospace';
@@ -1108,25 +1252,25 @@ function drawPixelBattleStage() {
     bCtx.fillText(ft.text, ft.x + 2, ft.y + 2);
     bCtx.fillStyle = ft.color;
     bCtx.fillText(ft.text, ft.x, ft.y);
-    ft.y -= 0.7;
+    ft.y -= 0.75;
     ft.life--;
     if (ft.life <= 0) battleVisual.floatingText = null;
   }
 
-  // Ultimate Screen Flash
   if (battleVisual.ultFlash > 0) {
     bCtx.fillStyle = `rgba(254, 240, 138, ${battleVisual.ultFlash / 16})`;
-    bCtx.fillRect(0, 0, 320, 165);
+    bCtx.fillRect(0, 0, 320, 175);
     battleVisual.ultFlash--;
   }
 }
 
-function drawPixelWarrior(cx, footY, mainColor, trimColor, token, facingRight, hasGuard, hasRage) {
+function drawDetailedPixelWarrior(cx, footY, mainColor, trimColor, token, facingRight, hasGuard, hasRage) {
   const P = 4;
   const x0 = Math.round(cx);
   const y0 = Math.round(footY);
   const roleIdx = token.role;
   const kills = token.kills || 0;
+  const capeWave = Math.round(Math.sin(battleVisual.tick * 0.2) * 1);
 
   const px = (gx, gy, w, h, col) => {
     bCtx.fillStyle = col;
@@ -1134,67 +1278,79 @@ function drawPixelWarrior(cx, footY, mainColor, trimColor, token, facingRight, h
     bCtx.fillRect(drawX, y0 + gy * P, w * P, h * P);
   };
 
-  // LVL 3 Boss Flame Aura
   if (kills >= 2) {
     bCtx.fillStyle = 'rgba(250, 204, 21, 0.35)';
-    bCtx.fillRect(x0 - 26, y0 - 76, 52, 76);
+    bCtx.fillRect(x0 - 30, y0 - 88, 60, 88);
   }
 
-  bCtx.fillStyle = 'rgba(0,0,0,0.45)';
-  bCtx.fillRect(x0 - 18, y0 - 2, 36, 5);
+  bCtx.fillStyle = 'rgba(0,0,0,0.55)';
+  bCtx.fillRect(x0 - 22, y0 - 2, 44, 6);
 
-  px(-4, -2, 3, 2, '#111827');
-  px(1,  -2, 3, 2, '#111827');
+  // Armored Boots & Legs
+  px(-5, -3, 4, 3, '#1e293b');
+  px(1,  -3, 4, 3, '#1e293b');
+  px(-4, -5, 3, 2, '#475569');
+  px(1,  -5, 3, 2, '#475569');
 
-  // Armor (Golden Chestplate if LVL 2+)
-  px(-4, -7, 8, 5, mainColor);
-  px(-2, -6, 4, 3, kills >= 1 ? '#facc15' : trimColor);
-  px(-6, -7, 2, 6, kills >= 2 ? '#facc15' : '#1e293b');
+  // Flowing Cape
+  px(-8 - capeWave, -11, 3, 8, kills >= 2 ? '#facc15' : '#0f172a');
 
-  px(-4, -12, 8, 5, '#fed7aa');
-  px(1, -10, 2, 2, '#0f172a');
+  // Heavy Torso & Shoulder Pauldrons
+  px(-5, -11, 10, 6, mainColor);
+  px(-3, -10, 6, 4, kills >= 1 ? '#facc15' : trimColor);
+  px(-7, -11, 3, 3, '#cbd5e1'); // Back shoulder armor
+  px(4,  -11, 3, 3, '#cbd5e1'); // Front shoulder armor
 
-  if (roleIdx === 0) {
-    px(-5, -14, 10, 3, '#cbd5e1');
-    px(-2, -16, 4, 2, mainColor);
-  } else if (roleIdx === 1) {
-    px(-5, -13, 10, 2, mainColor);
-    px(-7, -12, 2, 3, trimColor);
-  } else if (roleIdx === 2) {
-    px(-5, -14, 10, 3, '#facc15');
-    px(-3, -16, 6, 2, mainColor);
-  } else {
-    px(-6, -13, 12, 2, mainColor);
-    px(-4, -16, 8, 3, mainColor);
-    px(-2, -18, 4, 2, '#facc15');
+  // Head & Glowing Eyes
+  px(-5, -17, 10, 6, '#fed7aa');
+  px(1,  -15, 3, 2, '#0f172a');
+  px(2,  -15, 1, 1, '#38bdf8'); // Glowing eye glint
+
+  // Class Headgear
+  if (roleIdx === 0) { // Knight Visor + Plume
+    px(-6, -19, 12, 3, '#cbd5e1');
+    px(-3, -22, 6, 3, mainColor);
+  } else if (roleIdx === 1) { // Ninja Mask + Flowing Scarf
+    px(-5, -14, 10, 3, '#0f172a');
+    px(-6, -18, 12, 2, mainColor);
+    px(-9 - capeWave, -17, 3, 3, trimColor);
+  } else if (roleIdx === 2) { // Paladin Golden Horns
+    px(-6, -19, 12, 3, '#facc15');
+    px(-6, -22, 2, 3, '#fef08a');
+    px(4,  -22, 2, 3, '#fef08a');
+  } else { // Wizard Archmage Hat
+    px(-7, -18, 14, 2, mainColor);
+    px(-5, -21, 10, 3, mainColor);
+    px(-3, -24, 6, 3, '#facc15');
   }
 
-  // Floating Golden Crown above head if Evolved (LVL 2+)
+  // Evolved Crown
   if (kills >= 1) {
-    px(-3, -20, 6, 2, '#facc15');
-    px(-3, -21, 1, 1, '#facc15');
-    px(0,  -21, 1, 1, '#facc15');
-    px(2,  -21, 1, 1, '#facc15');
+    px(-3, -26, 6, 2, '#facc15');
+    px(-3, -27, 1, 1, '#fff');
+    px(2,  -27, 1, 1, '#fff');
   }
 
+  // Oversized 8-Bit Weapon
   if (roleIdx === 3) {
-    px(5, -13, 2, 12, '#92400e');
-    px(4, -15, 4, 3, '#38bdf8');
+    px(6, -18, 2, 16, '#92400e');
+    px(4, -21, 6, 4, '#38bdf8');
+    px(5, -20, 4, 2, '#ffffff');
   } else {
-    px(5, -6, 3, 2, '#facc15');
-    px(7, -12, 2, 7, (hasRage || kills >= 2) ? '#ef4444' : '#f8fafc');
-    px(7, -14, 2, 2, '#facc15');
+    px(6, -9, 4, 2, '#facc15');
+    px(8, -18, 3, 10, (hasRage || kills >= 2) ? '#ef4444' : '#f8fafc');
+    px(8, -20, 3, 2, '#38bdf8');
   }
 
   if (hasGuard) {
     bCtx.strokeStyle = '#38bdf8';
     bCtx.lineWidth = 3;
-    bCtx.strokeRect(x0 - 24, y0 - 74, 48, 76);
+    bCtx.strokeRect(x0 - 28, y0 - 88, 56, 90);
   }
 }
 
 // ==========================================
-// 10. LUDO KING CANVAS BOARD & GLOSSY PINS
+// 10. LUDO KING 3D TEARDROP PINS & SMART STACKING
 // ==========================================
 const canvas = document.getElementById('ludo-canvas');
 const ctx = canvas.getContext('2d');
@@ -1237,7 +1393,6 @@ function drawLudoKingBoard() {
     ctx.fillRect(sx * CELL + 1, sy * CELL + 1, CELL - 2, CELL - 2);
   });
 
-  // Active Safe Stars (shrinks in Sudden Death!)
   (state.safeIndices || []).forEach(idx => {
     const [gx, gy] = MAIN_TRACK[idx];
     ctx.font = 'bold 22px sans-serif';
@@ -1247,7 +1402,6 @@ function drawLudoKingBoard() {
     ctx.fillText('★', gx * CELL + CELL / 2, gy * CELL + CELL / 2 + 1);
   });
 
-  // Hidden Tiles (visible during PLACE_TRAPS, 5s MEMORIZE, or when triggered)
   Object.entries(state.hiddenTiles || {}).forEach(([idx, tile]) => {
     if (!tile.revealed) return;
     const [gx, gy] = MAIN_TRACK[idx];
@@ -1263,7 +1417,6 @@ function drawLudoKingBoard() {
     ctx.fillText(tile.icon, gx * CELL + CELL / 2, gy * CELL + CELL / 2 + 1);
   });
 
-  // Mystery Chest Drop
   if (state.mysteryChestIdx !== -1 && MAIN_TRACK[state.mysteryChestIdx]) {
     const [cx, cy] = MAIN_TRACK[state.mysteryChestIdx];
     ctx.fillStyle = '#fef08a';
@@ -1274,7 +1427,6 @@ function drawLudoKingBoard() {
     ctx.fillText('🎁', cx * CELL + CELL / 2, cy * CELL + CELL / 2 + 1);
   }
 
-  // Center Crown Triangles
   const cx = 300, cy = 300;
   const tris = [
     [[240,360],[360,360], COLORS[0]],
@@ -1312,34 +1464,60 @@ function drawBaseQuadrant(gx, gy, color) {
   });
 }
 
-function getTokenPixelCoords(pIdx, token) {
+function getTokenBaseCoords(pIdx, token) {
   if (token.steps === -1) {
     const [bx, by] = BASE_SPOTS[pIdx][token.id];
-    return { x: bx * CELL + CELL / 2, y: by * CELL + CELL / 2 };
+    return { x: bx * CELL + CELL / 2, y: by * CELL + CELL / 2, key: `B-${pIdx}-${token.id}` };
   }
   if (token.steps <= 50) {
     const gIdx = getGlobalTrackIndex(pIdx, token.steps);
     const [gx, gy] = MAIN_TRACK[gIdx];
-    return { x: gx * CELL + CELL / 2, y: gy * CELL + CELL / 2 };
+    return { x: gx * CELL + CELL / 2, y: gy * CELL + CELL / 2, key: `T-${gIdx}` };
   }
   const hIdx = Math.min(5, token.steps - 51);
   const [hx, hy] = HOME_STRETCH[pIdx][hIdx];
-  return { x: hx * CELL + CELL / 2, y: hy * CELL + CELL / 2 };
+  return { x: hx * CELL + CELL / 2, y: hy * CELL + CELL / 2, key: `H-${pIdx}-${hIdx}` };
 }
 
 function drawLudoKingTokens() {
   const movable = (state.phase === 'SELECT') ? getMovableTokens(state.turn, state.dice).map(t => t.id) : [];
 
+  // Group tokens by cell key so multiple tokens in one square neatly offset!
+  const groups = {};
   state.players.forEach((p, pIdx) => {
     if (!p.active) return;
     p.tokens.forEach(t => {
-      const { x, y } = getTokenPixelCoords(pIdx, t);
+      const pos = getTokenBaseCoords(pIdx, t);
+      if (!groups[pos.key]) groups[pos.key] = [];
+      groups[pos.key].push({ pIdx, token: t, x: pos.x, y: pos.y });
+    });
+  });
+
+  const stackOffsets = [
+    [[0, 0]],
+    [[-7, 0], [7, 0]],
+    [[-7, -5], [7, -5], [0, 6]],
+    [[-7, -6], [7, -6], [-7, 6], [7, 6]]
+  ];
+
+  Object.values(groups).forEach(list => {
+    const count = Math.min(4, list.length);
+    const scale = count > 1 ? 0.78 : 1.0;
+
+    list.forEach((item, idx) => {
+      const [ox, oy] = stackOffsets[count - 1][idx % 4];
+      const isHopping = hoppingToken && hoppingToken.pIdx === item.pIdx && hoppingToken.tokenId === item.token.id;
+      const jumpLift = isHopping ? -12 : 0;
+      const x = item.x + ox;
+      const y = item.y + oy + jumpLift;
+      const pIdx = item.pIdx;
+      const t = item.token;
       const isHighlight = (pIdx === state.turn && movable.includes(t.id));
 
       if (isHighlight) {
         ctx.beginPath();
-        ctx.arc(x, y, 18, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(250, 204, 21, 0.85)';
+        ctx.arc(x, y, 18 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.88)';
         ctx.fill();
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 2;
@@ -1348,62 +1526,68 @@ function drawLudoKingTokens() {
 
       if (t.shield) {
         ctx.beginPath();
-        ctx.arc(x, y - 2, 17, 0, Math.PI * 2);
+        ctx.arc(x, y - 3, 17 * scale, 0, Math.PI * 2);
         ctx.strokeStyle = '#0284c7';
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = 3;
         ctx.stroke();
       }
 
       if (t.rage) {
         ctx.beginPath();
-        ctx.arc(x, y - 2, 17, 0, Math.PI * 2);
+        ctx.arc(x, y - 3, 17 * scale, 0, Math.PI * 2);
         ctx.strokeStyle = '#dc2626';
-        ctx.lineWidth = 3.5;
+        ctx.lineWidth = 3;
         ctx.stroke();
       }
 
+      // Ground Shadow
       ctx.beginPath();
-      ctx.ellipse(x, y + 10, 11, 5, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.ellipse(item.x + ox, item.y + oy + 10 * scale, 11 * scale, 5 * scale, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.32)';
       ctx.fill();
 
-      const grad = ctx.createRadialGradient(x - 4, y - 6, 2, x, y, 15);
+      // 3D Teardrop Ludo King Pawn Body
+      const r = 13 * scale;
+      ctx.beginPath();
+      ctx.moveTo(x, y + 10 * scale);
+      ctx.bezierCurveTo(x - r * 1.3, y - 2 * scale, x - r, y - 16 * scale, x, y - 16 * scale);
+      ctx.bezierCurveTo(x + r, y - 16 * scale, x + r * 1.3, y - 2 * scale, x, y + 10 * scale);
+      ctx.closePath();
+
+      const grad = ctx.createRadialGradient(x - 4 * scale, y - 8 * scale, 2, x, y - 4 * scale, r * 1.4);
       grad.addColorStop(0, '#ffffff');
       grad.addColorStop(0.35, LIGHT_COLORS[pIdx]);
-      grad.addColorStop(1, COLORS[pIdx]);
+      grad.addColorStop(0.85, COLORS[pIdx]);
+      grad.addColorStop(1, DARK_COLORS[pIdx]);
 
-      ctx.beginPath();
-      ctx.arc(x, y - 2, 13, 0, Math.PI * 2);
       ctx.fillStyle = grad;
       ctx.fill();
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2;
       ctx.strokeStyle = (t.kills >= 1) ? '#facc15' : '#ffffff';
       ctx.stroke();
 
-      // Evolution Crown Badge on Evolved Tokens!
+      // Pin Top Jewel / Crown
       if (t.kills >= 1) {
-        ctx.font = 'bold 12px sans-serif';
+        ctx.font = `bold ${Math.round(11 * scale)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#fef08a';
-        ctx.fillText(t.kills >= 2 ? '👑' : '⭐', x, y - 2);
+        ctx.fillText(t.kills >= 2 ? '👑' : '⭐', x, y - 6 * scale);
       } else {
         ctx.beginPath();
-        ctx.arc(x, y - 2, 5, 0, Math.PI * 2);
-        ctx.fillStyle = COLORS[pIdx];
+        ctx.arc(x, y - 6 * scale, 4.5 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
         ctx.fill();
       }
     });
   });
 }
 
-// Board Click: Handles Trap Placement OR Token Selection
 canvas.addEventListener('click', (e) => {
   const rect = canvas.getBoundingClientRect();
   const clickX = (e.clientX - rect.left) * (600 / rect.width);
   const clickY = (e.clientY - rect.top) * (600 / rect.height);
 
-  // 1. Secret Trap Placement Click
   if (state.phase === 'PLACE_TRAPS') {
     const canPlace = (gameMode === 'local') || (mySeat === state.trapPlacingSeat);
     if (!canPlace) return;
@@ -1411,21 +1595,17 @@ canvas.addEventListener('click', (e) => {
     const gy = Math.floor(clickY / CELL);
     const trackIdx = MAIN_TRACK.findIndex(([tx, ty]) => tx === gx && ty === gy);
     if (trackIdx !== -1) {
-      if (gameMode === 'online' && !isHost) {
-        sendActionToHost({ action: 'PLACE_TRAP', trackIdx });
-      } else {
-        placeSecretTrapAt(state.trapPlacingSeat, trackIdx);
-      }
+      if (gameMode === 'online' && !isHost) sendActionToHost({ action: 'PLACE_TRAP', trackIdx });
+      else placeSecretTrapAt(state.trapPlacingSeat, trackIdx);
     }
     return;
   }
 
-  // 2. Token Selection Click
   if (state.phase !== 'SELECT' || !canIControlCurrentTurn()) return;
   const movable = getMovableTokens(state.turn, state.dice);
   for (let t of movable) {
-    const { x, y } = getTokenPixelCoords(state.turn, t);
-    if (Math.hypot(clickX - x, clickY - y) <= 25) {
+    const pos = getTokenBaseCoords(state.turn, t);
+    if (Math.hypot(clickX - pos.x, clickY - pos.y) <= 26) {
       if (gameMode === 'online' && !isHost) sendActionToHost({ action: 'MOVE', tokenId: t.id });
       else executeTokenMove(state.turn, t.id);
       break;

@@ -15,14 +15,13 @@
     <div class="royal-card">
       <div class="crown-icon">👑</div>
       <h1 class="royal-title">LUDO CLASH</h1>
-      <div class="royal-badge">ULTIMATE 8-BIT EDITION</div>
+      <div class="royal-badge">ARCADE BATTLE EDITION</div>
 
       <div class="name-box">
         <label>YOUR NAME</label>
         <input type="text" id="player-name" maxlength="10" placeholder="Enter Name" value="Player1" />
       </div>
 
-      <!-- MATCH MODIFIERS -->
       <div class="toggles-row">
         <label class="toggle-chip">
           <input type="checkbox" id="opt-trap-placer" checked />
@@ -60,13 +59,12 @@
 
   <!-- LUDO KING STYLE GAME BOARD SCREEN -->
   <div id="game-screen" class="screen">
-    <!-- TOP PLAYERS (GREEN & YELLOW) -->
     <div class="hud-row">
       <div id="pcard-1" class="lk-profile green-p">
         <div class="lk-avatar" style="background:#16a34a;">G</div>
         <div class="lk-info">
           <div class="lk-name" id="pname-1">GREEN</div>
-          <div class="lk-sub" id="pscore-1">Home: 0/4</div>
+          <div class="lk-sub" id="pscore-1">🏠0/4</div>
         </div>
         <div id="emote-1" class="emote-bubble hidden">🔥</div>
       </div>
@@ -80,22 +78,18 @@
         <div id="emote-2" class="emote-bubble hidden">🔥</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-2">YELLOW</div>
-          <div class="lk-sub" id="pscore-2">Home: 0/4</div>
+          <div class="lk-sub" id="pscore-2">🏠0/4</div>
         </div>
         <div class="lk-avatar" style="background:#eab308;">Y</div>
       </div>
     </div>
 
-    <!-- WOODEN-GOLD FRAMED LUDO BOARD -->
     <div class="wooden-frame">
       <canvas id="ludo-canvas" width="600" height="600"></canvas>
-      <!-- TRAP PLACEMENT / MEMORY BANNER -->
       <div id="memory-banner" class="memory-pill hidden">💣 TAP TRACK TO HIDE TRAPS!</div>
-      <!-- ACTION POPUP TOAST -->
       <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
     </div>
 
-    <!-- LIVE EMOTE BAR -->
     <div class="emote-bar">
       <button onclick="sendEmote('😂')">😂</button>
       <button onclick="sendEmote('😭')">😭</button>
@@ -104,18 +98,16 @@
       <button onclick="sendEmote('GG!')">GG</button>
     </div>
 
-    <!-- BOTTOM PLAYERS (RED & BLUE) + 3D DICE -->
     <div class="hud-row">
       <div id="pcard-0" class="lk-profile red-p">
         <div class="lk-avatar" style="background:#dc2626;">R</div>
         <div class="lk-info">
           <div class="lk-name" id="pname-0">RED</div>
-          <div class="lk-sub" id="pscore-0">Home: 0/4</div>
+          <div class="lk-sub" id="pscore-0">🏠0/4</div>
         </div>
         <div id="emote-0" class="emote-bubble hidden">🔥</div>
       </div>
 
-      <!-- 3D LUDO KING DICE BOX -->
       <div class="center-dice-dock">
         <div id="turn-indicator" class="turn-pill">RED'S TURN</div>
         <div class="dice-scene" onclick="handleDiceClick()">
@@ -135,14 +127,21 @@
         <div id="emote-3" class="emote-bubble hidden">🔥</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-3">BLUE</div>
-          <div class="lk-sub" id="pscore-3">Home: 0/4</div>
+          <div class="lk-sub" id="pscore-3">🏠0/4</div>
         </div>
         <div class="lk-avatar" style="background:#2563eb;">B</div>
       </div>
     </div>
   </div>
 
-  <!-- PURE 8-BIT RETRO PIXEL BATTLE ARENA (VISIBLE TO ALL PLAYERS) -->
+  <!-- POKEMON / STREET FIGHTER STYLE VS INTRO SPLASH -->
+  <div id="vs-splash" class="vs-splash hidden">
+    <div class="vs-band top-band" id="vs-atk-banner">RED KNIGHT</div>
+    <div class="vs-emblem">VS</div>
+    <div class="vs-band bot-band" id="vs-def-banner">GREEN NINJA</div>
+  </div>
+
+  <!-- PURE 8-BIT RETRO PIXEL BATTLE ARENA -->
   <div id="battle-modal" class="retro-overlay hidden">
     <div class="retro-console" id="battle-arena">
       <div class="crt-scanlines"></div>
@@ -153,7 +152,7 @@
       <!-- PIXEL HEALTH & RAGE HUD -->
       <div class="retro-hp-row">
         <div class="retro-stat-box">
-          <div class="r-name" id="atk-name">RED KNIGHT</div>
+          <div class="r-name" id="atk-name">RED L1</div>
           <div class="r-hp-track"><div id="atk-hp-bar" class="r-hp-fill"></div></div>
           <div class="r-rage-track"><div id="atk-rage-bar" class="r-rage-fill"></div></div>
           <div class="r-hp-num" id="atk-hp-text">HP 110 | RAGE 0%</div>
@@ -162,7 +161,7 @@
         <div class="r-vs">VS</div>
 
         <div class="retro-stat-box">
-          <div class="r-name" id="def-name">GREEN NINJA</div>
+          <div class="r-name" id="def-name">GREEN L1</div>
           <div class="r-hp-track"><div id="def-hp-bar" class="r-hp-fill"></div></div>
           <div class="r-rage-track"><div id="def-rage-bar" class="r-rage-fill"></div></div>
           <div class="r-hp-num" id="def-hp-text">HP 100 | RAGE 0%</div>
@@ -171,27 +170,36 @@
 
       <!-- 8-BIT PIXEL CHARACTER FIGHT STAGE CANVAS -->
       <div class="pixel-stage-frame">
-        <canvas id="battle-canvas" width="320" height="165"></canvas>
+        <canvas id="battle-canvas" width="320" height="175"></canvas>
+      </div>
+
+      <!-- REAL-TIME TIMING REFLEX MINIGAME BAR -->
+      <div id="timing-box" class="timing-box hidden" onclick="lockTimingStrike()">
+        <div class="timing-label">⚡ TAP NOW FOR CRIT! ⚡</div>
+        <div class="timing-track">
+          <div class="timing-gold-zone"></div>
+          <div id="timing-cursor" class="timing-cursor"></div>
+        </div>
       </div>
 
       <!-- RETRO DIALOGUE BOX -->
       <div id="battle-log" class="retro-dialogue">A wild clash begins!</div>
 
-      <!-- RETRO ARCADE ACTION BUTTONS (4 MOVES INCLUDING ULTIMATE) -->
+      <!-- RETRO ARCADE ACTION BUTTONS -->
       <div id="battle-controls" class="retro-btn-grid">
-        <button class="arcade-btn blue-arc" id="btn-slash" onclick="submitBattleMove('slash')">
+        <button class="arcade-btn blue-arc" id="btn-slash" onclick="initiateAttack('slash')">
           <span id="slash-label">⚔️ SLASH</span>
-          <small>26-34 DMG</small>
+          <small>TIMED HIT</small>
         </button>
-        <button class="arcade-btn red-arc" onclick="submitBattleMove('smash')">
+        <button class="arcade-btn red-arc" onclick="initiateAttack('smash')">
           <span>💥 HEAVY HIT</span>
-          <small>50-60 (70%)</small>
+          <small>HIGH DMG</small>
         </button>
-        <button class="arcade-btn green-arc" onclick="submitBattleMove('guard')">
+        <button class="arcade-btn green-arc" onclick="submitBattleMove('guard', 1)">
           <span>🛡️ GUARD</span>
           <small>BLOCK +18HP</small>
         </button>
-        <button class="arcade-btn gold-arc" id="btn-ult" onclick="submitBattleMove('ult')" disabled>
+        <button class="arcade-btn gold-arc" id="btn-ult" onclick="initiateAttack('ult')" disabled>
           <span>🔥 ULTIMATE</span>
           <small id="ult-sub">100% RAGE</small>
         </button>

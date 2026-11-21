@@ -555,3 +555,114 @@ body {
   50% { transform: translate(6px, -2px); }
   75% { transform: translate(-4px, -2px); }
 }
+
+/* =========================================
+   VS CLASH INTRO SPLASH & TIMING REFLEX BAR
+   ========================================= */
+.vs-splash {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 15, 0.92);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 120;
+  font-family: 'Press Start 2P', monospace;
+  overflow: hidden;
+  animation: flashScreen 0.35s steps(3);
+}
+
+@keyframes flashScreen {
+  0%   { background: #ffffff; }
+  50%  { background: #ef4444; }
+  100% { background: rgba(5, 7, 15, 0.92); }
+}
+
+.vs-band {
+  width: 110%;
+  padding: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #fff;
+  border-top: 4px solid #facc15;
+  border-bottom: 4px solid #facc15;
+  text-shadow: 3px 3px 0 #000;
+}
+
+.top-band {
+  background: #dc2626;
+  transform: rotate(-4deg);
+  animation: slideLeft 0.35s ease-out;
+}
+
+.bot-band {
+  background: #1d4ed8;
+  transform: rotate(-4deg);
+  animation: slideRight 0.35s ease-out;
+}
+
+.vs-emblem {
+  font-size: 38px;
+  color: #facc15;
+  text-shadow: 4px 4px 0 #ef4444, -2px -2px 0 #000;
+  margin: 18px 0;
+  animation: popEmote 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(-100%) rotate(-4deg); }
+  to   { transform: translateX(0) rotate(-4deg); }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(100%) rotate(-4deg); }
+  to   { transform: translateX(0) rotate(-4deg); }
+}
+
+/* REAL-TIME TIMING REFLEX BAR */
+.timing-box {
+  background: #0f172a;
+  border: 3px solid #facc15;
+  padding: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  animation: pulseMem 0.4s infinite alternate;
+}
+
+.timing-label {
+  font-size: 7px;
+  color: #fde047;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.timing-track {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  background: #1e293b;
+  border: 2px solid #fff;
+  overflow: hidden;
+}
+
+.timing-gold-zone {
+  position: absolute;
+  left: 38%;
+  width: 24%;
+  height: 100%;
+  background: linear-gradient(90deg, #f59e0b, #fef08a, #f59e0b);
+  border-left: 2px solid #fff;
+  border-right: 2px solid #fff;
+}
+
+.timing-cursor {
+  position: absolute;
+  top: 0;
+  left: 0%;
+  width: 8px;
+  height: 100%;
+  background: #ef4444;
+  border: 1px solid #fff;
+  box-shadow: 0 0 8px #ef4444;
+}
