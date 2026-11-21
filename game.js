@@ -651,18 +651,33 @@ function findEnemyAt(myP, gIdx) {
 }
 
 // ==========================================
-// 7. INSTANT 3-SECOND FUNNY 8-BIT CLASH CUTSCENE
+// 7. FLIPNOTE ANIME STICKMAN CLASH CUTSCENES!
 // ==========================================
-const FUNNY_GAGS = [
-  { name: 'FRYING PAN BONK!', caption: 'CLANG!! Sent flying back to base!' },
-  { name: 'MEGA FIREBALL!',   caption: 'BOOM!! Roasted to crispy pixels!' },
-  { name: 'GIANT HAMMER!',    caption: 'SQUASH!! Flattened like a pancake!' }
+const STICKMAN_FINISHERS = [
+  { id: 'HAMMER_100T', title: '★ 100t HAMMER SMASH! ★', caption: 'SQUASHED FLAT BY 100 TONS!' },
+  { id: 'SPEAR_SLAM',  title: '★ METEOR SPEAR DIVE! ★', caption: 'CRATER IMPACT!! BACK TO BASE!' },
+  { id: 'GUN_BARRAGE', title: '★ RAPID ANIME BARRAGE! ★', caption: 'BLASTED INTO ORBIT!!' },
+  { id: 'FIRE_TRIDENT',title: '★ FLAME & TRIDENT COMBO! ★', caption: 'LAUNCHED OUT OF THE ARENA!' }
 ];
 
+function playAnimeImpactSFX(step) {
+  if (!soundEnabled) return;
+  if (step === 'dash') {
+    playTone(320, 'triangle', 0.08, 0, 0.14);
+  } else if (step === 'hit') {
+    playTone(540, 'square', 0.05, 0, 0.18);
+    playTone(130, 'sawtooth', 0.2, 0.03, 0.24);
+  } else if (step === 'shot') {
+    playTone(880, 'square', 0.04, 0, 0.14);
+    playTone(260, 'sawtooth', 0.05, 0.01, 0.14);
+  } else if (step === 'boom') {
+    [180, 120, 80, 55].forEach((f, i) => playTone(f, 'sawtooth', 0.22, i * 0.05, 0.25));
+  }
+}
+
 function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
-  // Attacker has 75% advantage, Defender has 25% lucky dodge chance!
-  const attackerWins = Math.random() < 0.75;
-  const gagIdx = Math.floor(Math.random() * FUNNY_GAGS.length);
+  const attackerWins = Math.random() < 0.78;
+  const gagIdx = Math.floor(Math.random() * STICKMAN_FINISHERS.length);
 
   state.phase = 'CLASH';
   state.clash = { atkP, atkT, defP, defT, attackerWins, gagIdx };
@@ -680,82 +695,286 @@ function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
       state.clash = null;
       nextTurn(dice === 6);
     }
-  }, 2400);
+  }, 2750);
+}
+
+function drawStickman(ctx, x, y, dir, pose, strokeCol, badgeCol, scale = 1) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir * scale, scale);
+  ctx.strokeStyle = strokeCol;
+  ctx.fillStyle = strokeCol;
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  if (pose === 'flat') {
+    // Squashed pancake stickman under 100t hammer!
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 18, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = badgeCol;
+    ctx.fillRect(-10, -6, 20, 3);
+    ctx.restore();
+    return;
+  }
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(0, -36, 8, 0, Math.PI * 2);
+  if (pose === 'victim' || pose === 'air') ctx.fill();
+  else ctx.stroke();
+
+  // Player Color Headband / Crown Tag so you know who is who!
+  ctx.fillStyle = badgeCol;
+  ctx.fillRect(-7, -42, 14, 4);
+
+  // Torso & Limbs based on Anime Pose
+  ctx.beginPath();
+  if (pose === 'run') {
+    ctx.moveTo(-3, -28); ctx.lineTo(4, -14); // leaning forward
+    ctx.moveTo(4, -14); ctx.lineTo(14, 0);   // front leg
+    ctx.moveTo(4, -14); ctx.lineTo(-10, -4); // back leg
+    ctx.moveTo(0, -24); ctx.lineTo(14, -22); // front arm
+    ctx.moveTo(0, -24); ctx.lineTo(-12, -18);// back arm
+  } else if (pose === 'jump') {
+    ctx.moveTo(0, -28); ctx.lineTo(0, -14);
+    ctx.moveTo(0, -14); ctx.lineTo(10, -6);
+    ctx.moveTo(0, -14); ctx.lineTo(-8, -4);
+    ctx.moveTo(0, -25); ctx.lineTo(12, -38);
+    ctx.moveTo(0, -25); ctx.lineTo(-12, -34);
+  } else if (pose === 'air') {
+    // Ragdoll flying through air
+    ctx.moveTo(0, -28); ctx.lineTo(-12, -18);
+    ctx.moveTo(-12, -18); ctx.lineTo(-22, -24);
+    ctx.moveTo(-12, -18); ctx.lineTo(-18, -10);
+    ctx.moveTo(-4, -24); ctx.lineTo(8, -32);
+  } else if (pose === 'gun') {
+    // Recoil gun stance (like 0:15 in video)
+    ctx.moveTo(-4, -28); ctx.lineTo(-2, -14);
+    ctx.moveTo(-2, -14); ctx.lineTo(10, 0);
+    ctx.moveTo(-2, -14); ctx.lineTo(-12, 0);
+    ctx.moveTo(-3, -25); ctx.lineTo(14, -32);
+    ctx.stroke();
+    // Pixel Gun
+    ctx.fillStyle = strokeCol;
+    ctx.fillRect(12, -37, 11, 5);
+    ctx.fillRect(12, -33, 4, 6);
+    ctx.restore();
+    return;
+  } else {
+    // Idle / Victim stance
+    ctx.moveTo(0, -28); ctx.lineTo(0, -13);
+    ctx.moveTo(0, -13); ctx.lineTo(8, 0);
+    ctx.moveTo(0, -13); ctx.lineTo(-8, 0);
+    ctx.moveTo(0, -24); ctx.lineTo(10, -16);
+    ctx.moveTo(0, -24); ctx.lineTo(-10, -16);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 function playFunnyClashCutscene(clash) {
   const modal = document.getElementById('clash-modal');
   modal.classList.remove('hidden');
 
-  const gag = FUNNY_GAGS[clash.gagIdx];
+  const gag = STICKMAN_FINISHERS[clash.gagIdx];
   const winnerP = clash.attackerWins ? clash.atkP : clash.defP;
   const loserP  = clash.attackerWins ? clash.defP : clash.atkP;
 
-  document.getElementById('clash-title').innerText = `★ ${gag.name} ★`;
+  document.getElementById('clash-title').innerText = gag.title;
   document.getElementById('clash-caption').innerText =
     clash.attackerWins
-      ? `${COLOR_NAMES[winnerP]} BONKED ${COLOR_NAMES[loserP]}! ${gag.caption}`
-      : `PLOT TWIST! ${COLOR_NAMES[winnerP]} REVERSED ${COLOR_NAMES[loserP]}!`;
+      ? `${COLOR_NAMES[winnerP]} WRECKED ${COLOR_NAMES[loserP]}! ${gag.caption}`
+      : `REVERSAL! ${COLOR_NAMES[winnerP]} COUNTERED ${COLOR_NAMES[loserP]}!`;
 
   const c = document.getElementById('clash-canvas');
   const cx = c.getContext('2d');
-  let frame = 0;
+  let f = 0;
+
+  playAnimeImpactSFX('dash');
 
   const anim = setInterval(() => {
-    frame++;
-    if (frame > 45) { clearInterval(anim); return; }
+    f++;
+    if (f > 54) { clearInterval(anim); return; }
 
-    cx.fillStyle = '#0f172a';
+    // Flipnote Signature Black-on-White vs White-on-Black Impact Frame Inversion!
+    const isImpactInvert =
+      (gag.id === 'HAMMER_100T' && (f === 26 || f === 27)) ||
+      (gag.id === 'SPEAR_SLAM'  && (f === 24 || f === 25 || f === 26)) ||
+      (gag.id === 'GUN_BARRAGE' && (f === 22 || f === 28 || f === 34 || f >= 46)) ||
+      (gag.id === 'FIRE_TRIDENT'&& (f === 20 || f === 32));
+
+    const bg = isImpactInvert ? '#090d16' : '#f8fafc';
+    const fg = isImpactInvert ? '#f8fafc' : '#090d16';
+
+    cx.fillStyle = bg;
     cx.fillRect(0, 0, 320, 170);
-    cx.fillStyle = '#334155';
-    cx.fillRect(0, 135, 320, 35);
-    cx.fillStyle = '#facc15';
-    cx.fillRect(0, 135, 320, 3);
 
-    const hitFrame = 18;
-    const atkX = frame < hitFrame ? 75 + frame * 5 : 155;
-    const defX = frame < hitFrame ? 225 : 225 + (frame - hitFrame) * 9;
-    const defY = frame < hitFrame ? 135 : 135 - (frame - hitFrame) * 7;
+    // Flipnote Ground Line
+    cx.strokeStyle = fg;
+    cx.lineWidth = 3;
+    cx.beginPath();
+    cx.moveTo(0, 145);
+    cx.lineTo(320, 145);
+    cx.stroke();
 
-    if (frame === hitFrame) SFX.bonk();
+    const winCol = COLORS[winnerP];
+    const loseCol = COLORS[loserP];
 
-    // Draw Winner Warrior
-    drawMiniPixelHero(cx, atkX, 135, COLORS[winnerP], true, frame >= hitFrame);
+    // -----------------------------------------
+    // FINISHER 1: 100t GIANT HAMMER (Video 0:12)
+    // -----------------------------------------
+    if (gag.id === 'HAMMER_100T') {
+      if (f === 26) playAnimeImpactSFX('hit');
+      const wx = f < 16 ? 60 + f * 7 : 172;
+      const wy = f < 16 ? 145 : (f < 26 ? 145 - Math.sin(((f - 16) / 10) * Math.PI) * 65 : 145);
+      const loserPose = f >= 26 ? 'flat' : 'victim';
 
-    // Draw Flying Loser Warrior
-    drawMiniPixelHero(cx, defX, defY, COLORS[loserP], false, false);
+      drawStickman(cx, 225, 145, -1, loserPose, fg, loseCol);
+      drawStickman(cx, wx, wy, 1, f < 26 ? 'jump' : 'run', fg, winCol);
 
-    // Comic "BONK!" Starburst at impact
-    if (frame >= hitFrame && frame < hitFrame + 14) {
-      cx.fillStyle = '#facc15';
-      cx.font = 'bold 16px "Press Start 2P", monospace';
-      cx.textAlign = 'center';
-      cx.fillText('BONK!!', 190, 75 - (frame - hitFrame));
+      // Giant 100t Mallet
+      if (f >= 16) {
+        cx.save();
+        cx.translate(wx + 24, wy - 18);
+        const angle = f < 26 ? -0.9 : 0.05;
+        cx.rotate(angle);
+        // Handle
+        cx.strokeStyle = fg;
+        cx.lineWidth = 4;
+        cx.beginPath(); cx.moveTo(-18, 0); cx.lineTo(25, 0); cx.stroke();
+        // Big Barrel Head
+        cx.fillStyle = fg;
+        cx.fillRect(14, -26, 36, 52);
+        cx.fillStyle = bg;
+        cx.font = 'bold 10px "Press Start 2P", monospace';
+        cx.textAlign = 'center';
+        cx.fillText('100t', 32, 4);
+        cx.restore();
+      }
+      if (f >= 26 && f < 38) {
+        cx.strokeStyle = fg;
+        cx.beginPath();
+        cx.moveTo(185, 145); cx.lineTo(165, 125);
+        cx.moveTo(265, 145); cx.lineTo(285, 125);
+        cx.stroke();
+      }
     }
-  }, 45);
-}
 
-function drawMiniPixelHero(ctx, x, y, color, isWinner, swinging) {
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(x - 10, y - 14, 7, 14);
-  ctx.fillRect(x + 3, y - 14, 7, 14);
-
-  ctx.fillStyle = color;
-  ctx.fillRect(x - 12, y - 36, 24, 22);
-
-  ctx.fillStyle = '#fed7aa';
-  ctx.fillRect(x - 10, y - 52, 20, 16);
-  ctx.fillStyle = '#facc15';
-  ctx.fillRect(x - 11, y - 50, 22, 5);
-
-  if (isWinner) {
-    ctx.fillStyle = '#facc15';
-    if (swinging) {
-      ctx.fillRect(x + 12, y - 32, 28, 10);
-    } else {
-      ctx.fillRect(x + 12, y - 56, 10, 28);
+    // -----------------------------------------
+    // FINISHER 2: SPEAR METEOR SLAM (Video 0:06-0:07)
+    // -----------------------------------------
+    else if (gag.id === 'SPEAR_SLAM') {
+      if (f === 24) playAnimeImpactSFX('hit');
+      if (f < 24) {
+        const diveT = f / 24;
+        const wx = 90 + diveT * 120;
+        const wy = 25 + diveT * 115;
+        drawStickman(cx, 220, 145, -1, 'victim', fg, loseCol);
+        drawStickman(cx, wx, wy, 1, 'jump', fg, winCol);
+        // Diagonal Spear
+        cx.strokeStyle = fg;
+        cx.lineWidth = 3;
+        cx.beginPath();
+        cx.moveTo(wx - 15, wy - 45);
+        cx.lineTo(wx + 24, wy - 5);
+        cx.stroke();
+      } else {
+        // Crater shockwave explosion!
+        const fly = (f - 24) * 11;
+        drawStickman(cx, 210, 145, 1, 'run', fg, winCol);
+        drawStickman(cx, 230 + fly, 130 - fly * 0.9, -1, 'air', fg, loseCol);
+        cx.strokeStyle = fg;
+        cx.lineWidth = 3;
+        for (let i = -3; i <= 3; i++) {
+          cx.beginPath();
+          cx.moveTo(215, 145);
+          cx.lineTo(215 + i * 18, 145 - (4 - Math.abs(i)) * 16);
+          cx.stroke();
+        }
+      }
     }
-  }
+
+    // -----------------------------------------
+    // FINISHER 3: RAPID GUN BARRAGE + MEGA BOOM (Video 0:14-0:19)
+    // -----------------------------------------
+    else if (gag.id === 'GUN_BARRAGE') {
+      if (f === 18 || f === 24 || f === 30 || f === 36) playAnimeImpactSFX('shot');
+      if (f === 46) playAnimeImpactSFX('boom');
+
+      drawStickman(cx, 68, 145, 1, f >= 14 ? 'gun' : 'run', fg, winCol);
+
+      const lx = f < 14 ? 210 : Math.min(285, 210 + (f - 14) * 2.5);
+      const ly = f < 14 ? 145 : Math.max(32, 145 - (f - 14) * 3.5);
+      if (f < 46) {
+        drawStickman(cx, lx, ly, -1, f < 14 ? 'victim' : 'air', fg, loseCol);
+      }
+
+      // Muzzle flash & Bullet Streaks
+      if (f >= 16 && f < 46 && f % 2 === 0) {
+        cx.strokeStyle = fg;
+        cx.lineWidth = 2.5;
+        cx.beginPath();
+        cx.moveTo(92, 110);
+        cx.lineTo(lx - 8, ly - 20 + (Math.random() - 0.5) * 14);
+        cx.stroke();
+        // Muzzle burst
+        cx.beginPath();
+        cx.arc(94, 110, 8, 0, Math.PI * 2);
+        cx.stroke();
+      }
+
+      // Mega Screen-Filling Explosion Circle (Video 0:19)
+      if (f >= 46) {
+        const rad = (f - 45) * 26;
+        cx.strokeStyle = fg;
+        cx.lineWidth = 5;
+        cx.beginPath();
+        cx.arc(265, 45, rad, 0, Math.PI * 2);
+        cx.stroke();
+      }
+    }
+
+    // -----------------------------------------
+    // FINISHER 4: FLAME UPPERCUT & TRIDENT LAUNCH (Video 0:04-0:10)
+    // -----------------------------------------
+    else {
+      if (f === 20 || f === 32) playAnimeImpactSFX('hit');
+      const wx = f < 18 ? 60 + f * 7 : 186;
+      const ly = f < 20 ? 145 : (f < 32 ? 145 - (f - 20) * 6 : 73 - (f - 32) * 8);
+      const lx = f < 32 ? 215 : 215 + (f - 32) * 10;
+
+      drawStickman(cx, wx, 145, 1, f < 20 ? 'run' : 'jump', fg, winCol);
+      drawStickman(cx, lx, ly, -1, f < 20 ? 'victim' : 'air', fg, loseCol);
+
+      // Flame Hand Effect (Video 0:04)
+      if (f >= 16 && f < 28) {
+        cx.strokeStyle = fg;
+        cx.lineWidth = 2.5;
+        cx.beginPath();
+        cx.moveTo(wx + 12, 120);
+        cx.lineTo(wx + 24, 98);
+        cx.lineTo(wx + 32, 112);
+        cx.lineTo(wx + 38, 92);
+        cx.stroke();
+      }
+
+      // Giant Trident Thrust (Video 0:10)
+      if (f >= 28) {
+        cx.strokeStyle = fg;
+        cx.lineWidth = 3;
+        cx.beginPath();
+        cx.moveTo(wx + 8, 122);
+        cx.lineTo(wx + 58, 86);
+        // 3 Prongs
+        cx.moveTo(wx + 58, 86); cx.lineTo(wx + 70, 74);
+        cx.moveTo(wx + 52, 82); cx.lineTo(wx + 64, 70);
+        cx.moveTo(wx + 62, 92); cx.lineTo(wx + 74, 80);
+        cx.stroke();
+      }
+    }
+  }, 48);
 }
 
 // ==========================================
