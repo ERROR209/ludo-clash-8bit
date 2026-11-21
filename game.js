@@ -20,11 +20,12 @@ function playTone(freq, type = 'sine', duration = 0.12, delay = 0, vol = 0.12) {
 }
 
 const SFX = {
-  // Smooth modern Ludo sounds
   dice: () => { [320, 420, 520, 640].forEach((f, i) => playTone(f, 'triangle', 0.06, i * 0.05, 0.14)); },
   hop:  () => playTone(580, 'sine', 0.07, 0, 0.15),
   safe: () => { [523, 659, 784].forEach((f, i) => playTone(f, 'sine', 0.14, i * 0.07, 0.14)); },
-  // Pure 8-Bit Retro Arcade Battle sounds
+  tick: () => playTone(740, 'square', 0.06, 0, 0.1),
+  powerUp: () => { [523, 659, 784, 1046].forEach((f, i) => playTone(f, 'square', 0.1, i * 0.06, 0.15)); },
+  bomb: () => { [220, 150, 95, 65].forEach((f, i) => playTone(f, 'sawtooth', 0.16, i * 0.07, 0.2)); },
   battleStart: () => {
     const notes = [220, 261, 329, 440, 392, 523, 659];
     notes.forEach((f, i) => playTone(f, 'square', 0.09, i * 0.065, 0.13));
@@ -55,17 +56,25 @@ function toggleSound() {
 }
 
 // ==========================================
-// 2. LUDO KING BOARD GEOMETRY
+// 2. LUDO KING BOARD & RANDOM HIDDEN TILES
 // ==========================================
-const COLORS = ['#dc2626', '#16a34a', '#eab308', '#2563eb']; // Red, Green, Yellow, Blue
+const COLORS = ['#dc2626', '#16a34a', '#eab308', '#2563eb'];
 const LIGHT_COLORS = ['#fca5a5', '#86efac', '#fef08a', '#93c5fd'];
 const COLOR_NAMES = ['RED', 'GREEN', 'YELLOW', 'BLUE'];
 
 const WARRIOR_CLASSES = [
-  { name: 'KNIGHT', hp: 105, atk: 0, heal: 18, weapon: 'sword' },
-  { name: 'NINJA',  hp: 100, atk: 5, heal: 16, weapon: 'katana' },
-  { name: 'PALADIN',hp: 120, atk: -2,heal: 20, weapon: 'hammer' },
-  { name: 'WIZARD', hp: 95,  atk: 4, heal: 26, weapon: 'staff' }
+  { name: 'KNIGHT', hp: 105, atk: 0, heal: 18 },
+  { name: 'NINJA',  hp: 100, atk: 5, heal: 16 },
+  { name: 'PALADIN',hp: 120, atk: -2,heal: 20 },
+  { name: 'WIZARD', hp: 95,  atk: 4, heal: 26 }
+];
+
+const TILE_POOL = [
+  { type: 'turbo',  icon: '⚡', label: 'TURBO BOOST +3!',   bg: '#fef08a' },
+  { type: 'rage',   icon: '⚔️', label: 'RAGE ATK +15!',     bg: '#fecaca' },
+  { type: 'shield', icon: '🛡️', label: 'AEGIS SHIELD!',     bg: '#bae6fd' },
+  { type: 'bomb',   icon: '💣', label: 'BOMB TRAP -3!',     bg: '#fed7aa' },
+  { type: 'warp',   icon: '🌀', label: 'WARP BACK TO START!', bg: '#e9d5ff' }
 ];
 
 const MAIN_TRACK = [
@@ -101,6 +110,26 @@ const BASE_SPOTS = [
   [[11,11],[12,11],[11,12],[12,12]]
 ];
 
+// Generate 10 completely random hidden traps & power-ups every match
+function generateRandomHiddenTiles() {
+  const candidates = [];
+  for (let i = 0; i < 52; i++) {
+    if (!SAFE_TRACK_INDICES.includes(i)) candidates.push(i);
+  }
+  // Fisher-Yates shuffle
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  const selected = candidates.slice(0, 10);
+  const map = {};
+  selected.forEach((trackIdx, i) => {
+    const item = TILE_POOL[i % TILE_POOL.length];
+    map[trackIdx] = { ...item, revealed: true, used: false };
+  });
+  return map;
+}
+
 // ==========================================
 // 3. GAME STATE & MULTIPLAYER SYNC
 // ==========================================
@@ -115,7 +144,9 @@ let state = {
   players: [],
   turn: 0,
   dice: 1,
-  phase: 'ROLL', // 'ROLL', 'SELECT', 'ANIM', 'BATTLE'
+  phase: 'MEMORIZE', // 'MEMORIZE', 'ROLL', 'SELECT', 'ANIM', 'BATTLE'
+  memorySeconds: 5,
+  hiddenTiles: {},
   battle: null
 };
 
@@ -129,12 +160,16 @@ function createInitialState(playerConfigs) {
       tokens: [0, 1, 2, 3].map(tIdx => ({
         id: tIdx,
         steps: -1,
-        role: tIdx
+        role: tIdx,
+        shield: false,
+        rage: false
       }))
     })),
     turn: 0,
     dice: 1,
-    phase: 'ROLL',
+    phase: 'MEMORIZE',
+    memorySeconds: 5,
+    hiddenTiles: generateRandomHiddenTiles(),
     battle: null
   };
 }
@@ -213,8 +248,15 @@ function joinOnlineGame() {
         const wasBattle = (state.phase === 'BATTLE');
         state = data.state;
         switchToGameScreen();
-        if (state.phase === 'BATTLE' && !wasBattle) startBattleCanvasLoop();
+        // Everyone sees the 8-bit battle screen live!
+        if (state.phase === 'BATTLE' && !wasBattle) {
+          SFX.battleStart();
+          startBattleCanvasLoop();
+        }
         renderAll();
+      } else if (data.type === 'BATTLE_FX') {
+        // Sync visual hit sparks & floating numbers across all screens
+        applyRemoteBattleFX(data.fx);
       }
     });
   });
@@ -233,13 +275,18 @@ function launchOnlineMatch() {
   gameMode = 'online';
   state = createInitialState(configs);
   switchToGameScreen();
-  broadcastState();
-  renderAll();
+  startMemoryCountdown();
 }
 
 function broadcastState() {
   if (gameMode === 'online' && isHost) {
     connections.forEach(c => { if (c.open) c.send({ type: 'SYNC', state }); });
+  }
+}
+
+function broadcastBattleFX(fx) {
+  if (gameMode === 'online' && isHost) {
+    connections.forEach(c => { if (c.open) c.send({ type: 'BATTLE_FX', fx }); });
   }
 }
 
@@ -255,7 +302,7 @@ function handleRemoteAction(seat, data) {
 }
 
 // ==========================================
-// 5. LOCAL / BOT GAME START
+// 5. LOCAL / BOT START & 5-SEC MEMORY TIMER
 // ==========================================
 function startLocalGame(mode) {
   gameMode = mode;
@@ -278,12 +325,39 @@ function startLocalGame(mode) {
 
   state = createInitialState(configs);
   switchToGameScreen();
-  renderAll();
+  startMemoryCountdown();
 }
 
 function switchToGameScreen() {
   document.getElementById('menu-screen').classList.remove('active');
   document.getElementById('game-screen').classList.add('active');
+}
+
+function startMemoryCountdown() {
+  state.phase = 'MEMORIZE';
+  state.memorySeconds = 5;
+  renderAll();
+  broadcastState();
+
+  const timer = setInterval(() => {
+    state.memorySeconds -= 1;
+    if (state.memorySeconds > 0) {
+      SFX.tick();
+      renderAll();
+      broadcastState();
+    } else {
+      clearInterval(timer);
+      // Hide all un-triggered tiles!
+      Object.values(state.hiddenTiles).forEach(tile => {
+        tile.revealed = false;
+      });
+      SFX.safe();
+      state.phase = 'ROLL';
+      showToast('🤫 TILES HIDDEN! GAME ON!');
+      renderAll();
+      broadcastState();
+    }
+  }, 1000);
 }
 
 // ==========================================
@@ -332,7 +406,6 @@ function executeRoll() {
       renderAll();
       broadcastState();
       if (state.players[state.turn].isBot) {
-        // Smart bot prefers capturing or bringing out new token
         const pick = chooseSmartBotToken(state.turn, validTokens, roll);
         setTimeout(() => executeTokenMove(state.turn, pick.id), 550);
       }
@@ -345,7 +418,7 @@ function chooseSmartBotToken(pIdx, validTokens, roll) {
     const nextStep = t.steps === -1 ? 0 : t.steps + roll;
     const gIdx = getGlobalTrackIndex(pIdx, nextStep);
     if (gIdx !== -1 && !SAFE_TRACK_INDICES.includes(gIdx) && findEnemyAtGlobalIndex(pIdx, gIdx)) {
-      return t; // Attack enemy!
+      return t;
     }
   }
   const baseToken = validTokens.find(t => t.steps === -1);
@@ -381,7 +454,6 @@ function getGlobalTrackIndex(pIdx, steps) {
   return (START_INDEX[pIdx] + steps) % 52;
 }
 
-// Smooth box-by-box hopping animation just like Ludo King
 function executeTokenMove(pIdx, tokenId) {
   const player = state.players[pIdx];
   const token = player.tokens[tokenId];
@@ -430,21 +502,64 @@ function finishTokenMove(pIdx, token, dice) {
     return;
   }
 
-  // Check Safe Star or Enemy Collision
+  // Check Hidden Trap or Power-Up Tile!
+  const gIdx = getGlobalTrackIndex(pIdx, token.steps);
+  if (gIdx !== -1 && state.hiddenTiles[gIdx] && !state.hiddenTiles[gIdx].used) {
+    const hTile = state.hiddenTiles[gIdx];
+    hTile.revealed = true;
+    hTile.used = true;
+    showToast(`${hTile.icon} ${hTile.label}`);
+
+    if (hTile.type === 'turbo') {
+      SFX.powerUp();
+      token.steps = Math.min(55, token.steps + 3);
+    } else if (hTile.type === 'rage') {
+      SFX.powerUp();
+      token.rage = true;
+    } else if (hTile.type === 'shield') {
+      SFX.powerUp();
+      token.shield = true;
+    } else if (hTile.type === 'bomb') {
+      SFX.bomb();
+      token.steps = Math.max(0, token.steps - 3);
+    } else if (hTile.type === 'warp') {
+      SFX.bomb();
+      token.steps = 0; // Warped back to own start tile!
+    }
+
+    renderAll();
+    broadcastState();
+    setTimeout(() => resolveSquareCollision(pIdx, token, dice), 700);
+    return;
+  }
+
+  resolveSquareCollision(pIdx, token, dice);
+}
+
+function resolveSquareCollision(pIdx, token, dice) {
   const gIdx = getGlobalTrackIndex(pIdx, token.steps);
   if (gIdx !== -1) {
     if (SAFE_TRACK_INDICES.includes(gIdx)) {
       SFX.safe();
-      showToast('⭐ SAFE ZONE');
     } else {
       const enemy = findEnemyAtGlobalIndex(pIdx, gIdx);
       if (enemy) {
+        // Check if Defender has Aegis Shield from hidden tile!
+        if (enemy.token.shield) {
+          enemy.token.shield = false;
+          SFX.guard();
+          showToast('🛡️ AEGIS SHIELD BLOCKED!');
+          token.steps = -1; // Attacker sent back!
+          renderAll();
+          broadcastState();
+          setTimeout(() => nextTurn(false), 900);
+          return;
+        }
         startEightBitBattle(pIdx, token.id, enemy.pIdx, enemy.token.id);
         return;
       }
     }
   }
-
   nextTurn(dice === 6);
 }
 
@@ -461,7 +576,7 @@ function findEnemyAtGlobalIndex(myPIdx, gIdx) {
 }
 
 // ==========================================
-// 7. 8-BIT PIXEL CHARACTER BATTLE SYSTEM
+// 7. 8-BIT PIXEL CHARACTER BATTLE (ALL SCREENS)
 // ==========================================
 let battleAnimId = null;
 let battleVisual = {
@@ -471,7 +586,7 @@ let battleVisual = {
   atkFlash: 0,
   defFlash: 0,
   sparks: [],
-  floatingText: null // { text, x, y, color, life }
+  floatingText: null
 };
 
 function startEightBitBattle(atkP, atkT, defP, defT) {
@@ -489,11 +604,17 @@ function startEightBitBattle(atkP, atkT, defP, defT) {
     atkP, atkT, defP, defT,
     atkHp: atkMax, atkMax,
     defHp: defMax, defMax,
+    atkRage: aToken.rage,
+    defRage: dToken.rage,
     activeFighter: atkP,
     atkGuard: false,
     defGuard: false,
-    log: `${COLOR_NAMES[atkP]} ${aClass.name} challenges ${COLOR_NAMES[defP]} ${dClass.name}!`
+    log: `${COLOR_NAMES[atkP]} ${aClass.name} vs ${COLOR_NAMES[defP]} ${dClass.name}!`
   };
+
+  // Consume rage buffs into this battle
+  aToken.rage = false;
+  dToken.rage = false;
 
   battleVisual = { tick: 0, atkOffsetX: 0, defOffsetX: 0, atkFlash: 0, defFlash: 0, sparks: [], floatingText: null };
   startBattleCanvasLoop();
@@ -513,6 +634,22 @@ function submitBattleMove(move) {
   processBattleInput(b.activeFighter, move);
 }
 
+function applyRemoteBattleFX(fx) {
+  if (fx.dash === 'atk') {
+    battleVisual.atkOffsetX = 68;
+    setTimeout(() => { battleVisual.atkOffsetX = 0; }, 240);
+  } else if (fx.dash === 'def') {
+    battleVisual.defOffsetX = -68;
+    setTimeout(() => { battleVisual.defOffsetX = 0; }, 240);
+  }
+  if (fx.flash === 'def') battleVisual.defFlash = 10;
+  if (fx.flash === 'atk') battleVisual.atkFlash = 10;
+  if (fx.sparks) spawnHitSparks(fx.sparks.x, fx.sparks.y, fx.sparks.color);
+  if (fx.float) spawnFloatingText(fx.float.text, fx.float.x, fx.float.y, fx.float.color);
+  if (fx.sfx && SFX[fx.sfx]) SFX[fx.sfx]();
+  if (fx.shake) triggerArenaShake();
+}
+
 function processBattleInput(seat, move) {
   const b = state.battle;
   if (!b || b.activeFighter !== seat) return;
@@ -520,8 +657,9 @@ function processBattleInput(seat, move) {
   const isAtkTurn = (seat === b.atkP);
   const actorToken = state.players[seat].tokens[isAtkTurn ? b.atkT : b.defT];
   const wClass = WARRIOR_CLASSES[actorToken.role];
+  const rageBonus = (isAtkTurn ? b.atkRage : b.defRage) ? 15 : 0;
 
-  // Trigger character dash animation
+  let fx = { dash: isAtkTurn ? 'atk' : 'def' };
   if (isAtkTurn) battleVisual.atkOffsetX = 68;
   else battleVisual.defOffsetX = -68;
   setTimeout(() => {
@@ -534,13 +672,16 @@ function processBattleInput(seat, move) {
     const isSmash = (move === 'smash');
     if (isSmash && Math.random() < 0.30) {
       SFX.miss();
+      fx.sfx = 'miss';
       msg = `${COLOR_NAMES[seat]} used HEAVY HIT... MISSED!`;
-      spawnFloatingText('MISS!', isAtkTurn ? 225 : 95, 65, '#facc15');
+      const tx = isAtkTurn ? 225 : 95;
+      spawnFloatingText('MISS!', tx, 65, '#facc15');
+      fx.float = { text: 'MISS!', x: tx, y: 65, color: '#facc15' };
       if (isAtkTurn) b.defGuard = false; else b.atkGuard = false;
     } else {
       let dmg = isSmash
-        ? 50 + Math.floor(Math.random() * 11) + wClass.atk
-        : 26 + Math.floor(Math.random() * 9) + wClass.atk;
+        ? 50 + Math.floor(Math.random() * 11) + wClass.atk + rageBonus
+        : 26 + Math.floor(Math.random() * 9) + wClass.atk + rageBonus;
       if (isAtkTurn && b.defGuard) { dmg = Math.floor(dmg * 0.3); b.defGuard = false; }
       if (!isAtkTurn && b.atkGuard) { dmg = Math.floor(dmg * 0.3); b.atkGuard = false; }
 
@@ -549,14 +690,22 @@ function processBattleInput(seat, move) {
         battleVisual.defFlash = 10;
         spawnHitSparks(225, 100, COLORS[seat]);
         spawnFloatingText(`-${dmg}`, 225, 60, '#ef4444');
+        fx.flash = 'def';
+        fx.sparks = { x: 225, y: 100, color: COLORS[seat] };
+        fx.float = { text: `-${dmg}`, x: 225, y: 60, color: '#ef4444' };
       } else {
         b.atkHp = Math.max(0, b.atkHp - dmg);
         battleVisual.atkFlash = 10;
         spawnHitSparks(95, 100, COLORS[seat]);
         spawnFloatingText(`-${dmg}`, 95, 60, '#ef4444');
+        fx.flash = 'atk';
+        fx.sparks = { x: 95, y: 100, color: COLORS[seat] };
+        fx.float = { text: `-${dmg}`, x: 95, y: 60, color: '#ef4444' };
       }
 
       isSmash ? SFX.smash() : SFX.slash();
+      fx.sfx = isSmash ? 'smash' : 'slash';
+      fx.shake = true;
       msg = isSmash
         ? `CRITICAL HIT! ${COLOR_NAMES[seat]} dealt ${dmg} DMG!`
         : `${COLOR_NAMES[seat]} slashed for ${dmg} DMG!`;
@@ -564,19 +713,23 @@ function processBattleInput(seat, move) {
     }
   } else if (move === 'guard') {
     SFX.guard();
+    fx.sfx = 'guard';
     if (isAtkTurn) {
       b.atkGuard = true;
       b.atkHp = Math.min(b.atkMax, b.atkHp + wClass.heal);
       spawnFloatingText(`+${wClass.heal} HP`, 95, 60, '#4ade80');
+      fx.float = { text: `+${wClass.heal} HP`, x: 95, y: 60, color: '#4ade80' };
     } else {
       b.defGuard = true;
       b.defHp = Math.min(b.defMax, b.defHp + wClass.heal);
       spawnFloatingText(`+${wClass.heal} HP`, 225, 60, '#4ade80');
+      fx.float = { text: `+${wClass.heal} HP`, x: 225, y: 60, color: '#4ade80' };
     }
     msg = `${COLOR_NAMES[seat]} used GUARD (+${wClass.heal} HP)!`;
   }
 
   b.log = msg;
+  broadcastBattleFX(fx);
 
   // Check KO
   if (b.defHp <= 0 || b.atkHp <= 0) {
@@ -669,33 +822,27 @@ function drawPixelBattleStage() {
   const b = state.battle;
   if (!b) return;
 
-  // 1. Retro Sky & Pixel Stadium Backdrop
   bCtx.fillStyle = '#1e1b4b';
   bCtx.fillRect(0, 0, 320, 170);
 
-  // Retro Grid Mountains / Pillars
   bCtx.fillStyle = '#312e81';
   for (let i = 0; i < 320; i += 32) {
     bCtx.fillRect(i + 4, 30, 16, 95);
   }
 
-  // Pixel Arena Floor
   bCtx.fillStyle = '#374151';
   bCtx.fillRect(0, 122, 320, 48);
   bCtx.fillStyle = '#facc15';
   bCtx.fillRect(0, 122, 320, 4);
 
-  // Checkered Floor Tiles
   bCtx.fillStyle = '#1f2937';
   for (let x = 0; x < 320; x += 20) {
     bCtx.fillRect(x, 132, 10, 10);
     bCtx.fillRect(x + 10, 148, 10, 10);
   }
 
-  // Idle Bobbing
   const bob = Math.sin(battleVisual.tick * 0.15) * 2;
 
-  // Draw Attacker Pixel Character (Left, facing Right)
   const aToken = state.players[b.atkP].tokens[b.atkT];
   if (battleVisual.atkFlash > 0) battleVisual.atkFlash--;
   if (battleVisual.atkFlash % 2 === 0) {
@@ -706,11 +853,11 @@ function drawPixelBattleStage() {
       LIGHT_COLORS[b.atkP],
       aToken.role,
       true,
-      b.atkGuard
+      b.atkGuard,
+      b.atkRage
     );
   }
 
-  // Draw Defender Pixel Character (Right, facing Left)
   const dToken = state.players[b.defP].tokens[b.defT];
   if (battleVisual.defFlash > 0) battleVisual.defFlash--;
   if (battleVisual.defFlash % 2 === 0) {
@@ -721,11 +868,11 @@ function drawPixelBattleStage() {
       LIGHT_COLORS[b.defP],
       dToken.role,
       false,
-      b.defGuard
+      b.defGuard,
+      b.defRage
     );
   }
 
-  // Hit Sparks
   battleVisual.sparks.forEach(s => {
     bCtx.fillStyle = s.color;
     bCtx.fillRect(Math.round(s.x), Math.round(s.y), 4, 4);
@@ -735,7 +882,6 @@ function drawPixelBattleStage() {
   });
   battleVisual.sparks = battleVisual.sparks.filter(s => s.life > 0);
 
-  // Floating Damage / Heal Number
   if (battleVisual.floatingText) {
     const ft = battleVisual.floatingText;
     bCtx.font = 'bold 12px "Press Start 2P", monospace';
@@ -750,10 +896,8 @@ function drawPixelBattleStage() {
   }
 }
 
-// Draws a crisp 16-bit/8-bit style Pixel Warrior character from a Ludo Token!
-function drawPixelWarrior(cx, footY, mainColor, trimColor, roleIdx, facingRight, hasGuard) {
-  const P = 4; // 1 pixel block = 4x4 canvas px
-  const dir = facingRight ? 1 : -1;
+function drawPixelWarrior(cx, footY, mainColor, trimColor, roleIdx, facingRight, hasGuard, hasRage) {
+  const P = 4;
   const x0 = Math.round(cx);
   const y0 = Math.round(footY);
 
@@ -763,55 +907,43 @@ function drawPixelWarrior(cx, footY, mainColor, trimColor, roleIdx, facingRight,
     bCtx.fillRect(drawX, y0 + gy * P, w * P, h * P);
   };
 
-  // Ground Shadow
   bCtx.fillStyle = 'rgba(0,0,0,0.45)';
   bCtx.fillRect(x0 - 18, y0 - 2, 36, 5);
 
-  // Boots
   px(-4, -2, 3, 2, '#111827');
   px(1,  -2, 3, 2, '#111827');
 
-  // Armor Torso
   px(-4, -7, 8, 5, mainColor);
-  px(-2, -6, 4, 3, trimColor); // Chestplate
-
-  // Cape
+  px(-2, -6, 4, 3, trimColor);
   px(-6, -7, 2, 6, '#1e293b');
 
-  // Head & Skin
   px(-4, -12, 8, 5, '#fed7aa');
-  // Visor / Eyes
   px(1, -10, 2, 2, '#0f172a');
 
-  // Class-specific Helmet / Hat
-  if (roleIdx === 0) { // Knight Plume Helmet
+  if (roleIdx === 0) {
     px(-5, -14, 10, 3, '#cbd5e1');
     px(-2, -16, 4, 2, mainColor);
-  } else if (roleIdx === 1) { // Ninja Headband
+  } else if (roleIdx === 1) {
     px(-5, -13, 10, 2, mainColor);
     px(-7, -12, 2, 3, trimColor);
-  } else if (roleIdx === 2) { // Paladin Crown Helm
+  } else if (roleIdx === 2) {
     px(-5, -14, 10, 3, '#facc15');
     px(-3, -16, 6, 2, mainColor);
-  } else { // Wizard Pointed Hat
+  } else {
     px(-6, -13, 12, 2, mainColor);
     px(-4, -16, 8, 3, mainColor);
     px(-2, -18, 4, 2, '#facc15');
   }
 
-  // Pixel Weapon in Hand
   if (roleIdx === 3) {
-    // Wizard Magic Staff
     px(5, -13, 2, 12, '#92400e');
     px(4, -15, 4, 3, '#38bdf8');
   } else {
-    // Pixel Sword / Katana Blade
-    px(5, -6, 3, 2, '#facc15');   // Hilt
-    px(7, -12, 2, 7, '#f8fafc');  // Blade
-    px(7, -14, 2, 2, '#93c5fd');  // Tip
+    px(5, -6, 3, 2, '#facc15');
+    px(7, -12, 2, 7, hasRage ? '#ef4444' : '#f8fafc');
+    px(7, -14, 2, 2, hasRage ? '#facc15' : '#93c5fd');
   }
 
-  // Pixel Shield Aura if Guard active
   if (hasGuard) {
     bCtx.strokeStyle = '#38bdf8';
     bCtx.lineWidth = 3;
@@ -836,13 +968,11 @@ function renderAll() {
 function drawLudoKingBoard() {
   ctx.clearRect(0, 0, 600, 600);
 
-  // 4 Quadrant Bases
   drawBaseQuadrant(0, 9, COLORS[0]);
   drawBaseQuadrant(0, 0, COLORS[1]);
   drawBaseQuadrant(9, 0, COLORS[2]);
   drawBaseQuadrant(9, 9, COLORS[3]);
 
-  // White Track Cells
   for (let gx = 0; gx < 15; gx++) {
     for (let gy = 0; gy < 15; gy++) {
       if ((gx < 6 && gy < 6) || (gx > 8 && gy < 6) || (gx < 6 && gy > 8) || (gx > 8 && gy > 8)) continue;
@@ -855,7 +985,6 @@ function drawLudoKingBoard() {
     }
   }
 
-  // Colored Home Paths & Start Cells
   HOME_STRETCH.forEach((path, pIdx) => {
     path.slice(0, 5).forEach(([gx, gy]) => {
       ctx.fillStyle = COLORS[pIdx];
@@ -876,7 +1005,23 @@ function drawLudoKingBoard() {
     ctx.fillText('★', gx * CELL + CELL / 2, gy * CELL + CELL / 2 + 1);
   });
 
-  // Center 4-Color Home Crown Triangles
+  // Draw Hidden Tiles ONLY during 5s Memory Reveal OR when triggered!
+  Object.entries(state.hiddenTiles || {}).forEach(([idx, tile]) => {
+    if (!tile.revealed) return;
+    const [gx, gy] = MAIN_TRACK[idx];
+    ctx.fillStyle = tile.bg;
+    ctx.fillRect(gx * CELL + 2, gy * CELL + 2, CELL - 4, CELL - 4);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(gx * CELL + 2, gy * CELL + 2, CELL - 4, CELL - 4);
+
+    ctx.font = '20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(tile.icon, gx * CELL + CELL / 2, gy * CELL + CELL / 2 + 1);
+  });
+
+  // Center Crown Triangles
   const cx = 300, cy = 300;
   const tris = [
     [[240,360],[360,360], COLORS[0]],
@@ -902,13 +1047,11 @@ function drawBaseQuadrant(gx, gy, color) {
   ctx.fillStyle = color;
   ctx.fillRect(gx * CELL, gy * CELL, 6 * CELL, 6 * CELL);
 
-  // Inner White Rounded Yard
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
   ctx.roundRect((gx + 1) * CELL, (gy + 1) * CELL, 4 * CELL, 4 * CELL, 16);
   ctx.fill();
 
-  // 4 Token Sockets
   const offsets = [[2,2],[3,2],[2,3],[3,3]];
   offsets.forEach(([ox, oy]) => {
     ctx.beginPath();
@@ -938,11 +1081,10 @@ function drawLudoKingTokens() {
 
   state.players.forEach((p, pIdx) => {
     if (!p.active) return;
-    p.tokens.forEach((t, idx) => {
+    p.tokens.forEach(t => {
       const { x, y } = getTokenPixelCoords(pIdx, t);
       const isHighlight = (pIdx === state.turn && movable.includes(t.id));
 
-      // Pulsing Ring for Movable Token
       if (isHighlight) {
         ctx.beginPath();
         ctx.arc(x, y, 18, 0, Math.PI * 2);
@@ -953,13 +1095,29 @@ function drawLudoKingTokens() {
         ctx.stroke();
       }
 
-      // Drop Shadow
+      // Aegis Shield Aura on Token
+      if (t.shield) {
+        ctx.beginPath();
+        ctx.arc(x, y - 2, 17, 0, Math.PI * 2);
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+      }
+
+      // Rage Attack Aura on Token
+      if (t.rage) {
+        ctx.beginPath();
+        ctx.arc(x, y - 2, 17, 0, Math.PI * 2);
+        ctx.strokeStyle = '#dc2626';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+      }
+
       ctx.beginPath();
       ctx.ellipse(x, y + 10, 11, 5, 0, 0, Math.PI * 2);
       ctx.fillStyle = 'rgba(0,0,0,0.3)';
       ctx.fill();
 
-      // Glossy 3D Ludo King Pawn/Pin Body
       const grad = ctx.createRadialGradient(x - 4, y - 6, 2, x, y, 15);
       grad.addColorStop(0, '#ffffff');
       grad.addColorStop(0.35, LIGHT_COLORS[pIdx]);
@@ -973,7 +1131,6 @@ function drawLudoKingTokens() {
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
 
-      // Inner Ring
       ctx.beginPath();
       ctx.arc(x, y - 2, 6, 0, Math.PI * 2);
       ctx.fillStyle = COLORS[pIdx];
@@ -1000,6 +1157,15 @@ canvas.addEventListener('click', (e) => {
 });
 
 function updateHUD() {
+  // Memory Banner Update
+  const memBanner = document.getElementById('memory-banner');
+  if (state.phase === 'MEMORIZE') {
+    memBanner.classList.remove('hidden');
+    memBanner.innerText = `👁️ MEMORIZE TILES! ${state.memorySeconds}s`;
+  } else {
+    memBanner.classList.add('hidden');
+  }
+
   state.players.forEach((p, idx) => {
     const card = document.getElementById(`pcard-${idx}`);
     if (!p.active) {
@@ -1016,12 +1182,12 @@ function updateHUD() {
   const curP = state.players[state.turn];
   document.getElementById('turn-indicator').innerText = `${curP.name}'S TURN`;
 
-  // Update 3D Dice Face
   const cube = document.getElementById('cube-dice');
   cube.className = `cube show-${state.dice}`;
 
   const hint = document.getElementById('action-hint');
-  if (state.phase === 'ROLL') hint.innerText = canIControlCurrentTurn() ? 'TAP DICE' : 'WAITING...';
+  if (state.phase === 'MEMORIZE') hint.innerText = 'MEMORIZE!';
+  else if (state.phase === 'ROLL') hint.innerText = canIControlCurrentTurn() ? 'TAP DICE' : 'WAITING...';
   else if (state.phase === 'SELECT') hint.innerText = 'PICK TOKEN';
   else hint.innerText = 'MOVING...';
 }
@@ -1036,6 +1202,10 @@ function updateBattleModal() {
   const b = state.battle;
   const aClass = WARRIOR_CLASSES[state.players[b.atkP].tokens[b.atkT].role];
   const dClass = WARRIOR_CLASSES[state.players[b.defP].tokens[b.defT].role];
+
+  const isParticipant = (gameMode === 'local') || (mySeat === b.atkP || mySeat === b.defP);
+  document.getElementById('battle-header-text').innerText =
+    isParticipant ? '★ 8-BIT CLASH ARENA ★' : '👁️ LIVE SPECTATING CLASH 👁️';
 
   document.getElementById('atk-name').innerText = `${COLOR_NAMES[b.atkP]} ${aClass.name}`;
   document.getElementById('atk-hp-bar').style.width = `${(b.atkHp / b.atkMax) * 100}%`;
@@ -1060,7 +1230,7 @@ function showToast(text) {
   const toast = document.getElementById('toast-banner');
   toast.innerText = text;
   toast.classList.remove('hidden');
-  setTimeout(() => toast.classList.add('hidden'), 1000);
+  setTimeout(() => toast.classList.add('hidden'), 1100);
 }
 
 function declareWinner(pIdx) {

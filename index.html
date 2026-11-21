@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LUDO KING × 8-BIT BATTLE</title>
+  <title>LUDO CLASH × 8-BIT BATTLE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
@@ -15,7 +15,7 @@
     <div class="royal-card">
       <div class="crown-icon">👑</div>
       <h1 class="royal-title">LUDO CLASH</h1>
-      <div class="royal-badge">8-BIT BATTLE EDITION</div>
+      <div class="royal-badge">MEMORY TRAPS × 8-BIT BATTLE</div>
 
       <div class="name-box">
         <label>YOUR NAME</label>
@@ -56,13 +56,11 @@
           <div class="lk-name" id="pname-1">GREEN</div>
           <div class="lk-sub" id="pscore-1">Home: 0/4</div>
         </div>
-        <div class="mini-dice" id="mdice-1">🎲</div>
       </div>
 
       <button class="sound-pill" onclick="toggleSound()" id="sound-btn">🔊</button>
 
       <div id="pcard-2" class="lk-profile yellow-p">
-        <div class="mini-dice" id="mdice-2">🎲</div>
         <div class="lk-info" style="text-align:right;">
           <div class="lk-name" id="pname-2">YELLOW</div>
           <div class="lk-sub" id="pscore-2">Home: 0/4</div>
@@ -74,6 +72,9 @@
     <!-- WOODEN-GOLD FRAMED LUDO BOARD -->
     <div class="wooden-frame">
       <canvas id="ludo-canvas" width="600" height="600"></canvas>
+      <!-- 5-SECOND MEMORY REVEAL BANNER -->
+      <div id="memory-banner" class="memory-pill hidden">👁️ MEMORIZE TRAPS! 5s</div>
+      <!-- ACTION POPUP TOAST -->
       <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
     </div>
 
@@ -113,12 +114,12 @@
     </div>
   </div>
 
-  <!-- PURE 8-BIT RETRO PIXEL BATTLE ARENA -->
+  <!-- PURE 8-BIT RETRO PIXEL BATTLE ARENA (VISIBLE TO ALL PLAYERS) -->
   <div id="battle-modal" class="retro-overlay hidden">
     <div class="retro-console" id="battle-arena">
       <div class="crt-scanlines"></div>
       <div class="retro-top-bar">
-        <span>★ 8-BIT CLASH ARENA ★</span>
+        <span id="battle-header-text">★ 8-BIT CLASH ARENA ★</span>
       </div>
 
       <!-- PIXEL HEALTH HUD -->
