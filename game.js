@@ -1,5 +1,5 @@
 // ==========================================
-// 1. FUN SOUND EFFECTS
+// 1. AUDIO + INDIAN MEME SOUNDBOARD ENGINE
 // ==========================================
 let soundEnabled = true;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -19,6 +19,39 @@ function playTone(freq, type = 'sine', duration = 0.1, delay = 0, vol = 0.13) {
   osc.stop(audioCtx.currentTime + delay + duration);
 }
 
+const INDIAN_MEMES = [
+  { file: 'sounds/chalaja.mp3',     text: 'CHALA JA BHOSDIKE! 😂',      voice: 'Chala jaa bhosdike!' },
+  { file: 'sounds/maachudgayi.mp3', text: 'MAA CHUD GAYI ISKI TOH! 💀', voice: 'Maa chud gayi iski toh!' },
+  { file: 'sounds/gaddari.mp3',     text: 'GADDARI KARBE!! 😡',         voice: 'Gaddari karbe teri behen ko!' },
+  { file: 'sounds/lawde.mp3',       text: 'LAWDE LAG GAYE! 😭',         voice: 'Lawde lag gaye!' },
+  { file: 'sounds/carry.mp3',       text: 'ABBE SAALE! 🔥',             voice: 'Abbe saale!' },
+  { file: 'sounds/scout.mp3',       text: 'BHAI KYA KAR RAHA HAI TU?!', voice: 'Bhai kya kar raha hai tu!' },
+  { file: 'sounds/khatam.mp3',      text: 'KHATAM! TATA! BYE BYE! 👋', voice: 'Khatam, tata, bye bye, gaya!' },
+  { file: 'sounds/kaunhai.mp3',     text: 'KAUN HAIN YE LOG?! 🤔',      voice: 'Kaun hain ye log, kahan se aate hain!' },
+  { file: 'sounds/moyemoye.mp3',    text: 'MOYE MOYE... 🎻',            voice: 'Moye moye!' },
+  { file: 'sounds/emotional.mp3',   text: 'EMOTIONAL DAMAGE! 💥',       voice: 'Emotional damage!' }
+];
+
+function triggerIndianMemeSound() {
+  if (!soundEnabled) return null;
+  const meme = INDIAN_MEMES[Math.floor(Math.random() * INDIAN_MEMES.length)];
+
+  const audio = new Audio(meme.file);
+  audio.volume = 1.0;
+  audio.play().catch(() => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(meme.voice);
+      utter.lang = 'hi-IN';
+      utter.rate = 1.15;
+      utter.pitch = 1.05;
+      window.speechSynthesis.speak(utter);
+    }
+  });
+
+  return meme;
+}
+
 const SFX = {
   dice:  () => [340, 480, 640].forEach((f, i) => playTone(f, 'triangle', 0.06, i * 0.04, 0.14)),
   hop:   () => playTone(600, 'sine', 0.06, 0, 0.12),
@@ -27,7 +60,6 @@ const SFX = {
   bonk:  () => {
     playTone(520, 'square', 0.06, 0, 0.18);
     playTone(160, 'sawtooth', 0.22, 0.05, 0.22);
-    playTone(90, 'triangle', 0.25, 0.12, 0.22);
   },
   win:   () => [523, 659, 784, 1046, 784, 1046].forEach((f, i) => playTone(f, 'triangle', 0.15, i * 0.1, 0.16))
 };
@@ -38,7 +70,7 @@ function toggleSound() {
 }
 
 // ==========================================
-// 2. BOARD TRACKS & CONSTANTS
+// 2. BOARD TRACKS & SECRET ITEM POOL
 // ==========================================
 const COLORS = ['#dc2626', '#16a34a', '#eab308', '#2563eb'];
 const HEX_COLORS = [0xdc2626, 0x16a34a, 0xeab308, 0x2563eb];
@@ -62,6 +94,7 @@ const MAIN_TRACK = [
 
 const START_INDEX = [0, 13, 26, 39];
 const SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
+
 const SECRET_ITEM_POOL = [
   { type: 'BOOST', emoji: '⚡', bg: '#16a34a', toast: '⚡ SECRET BOOST +4 STEPS!' },
   { type: 'EXTRA', emoji: '🎲', bg: '#2563eb', toast: '🎲 SECRET EXTRA TURN!' },
@@ -84,7 +117,7 @@ const BASE_SPOTS = [
 ];
 
 // ==========================================
-// 3. THREE.JS AUTHENTIC LUDO KING 3D BOARD + 3D ICONS
+// 3. THREE.JS AUTHENTIC LUDO KING 3D BOARD + SECRET ICONS
 // ==========================================
 let scene, boardGroup, camera, renderer, raycaster, mouseVec;
 let pawnMeshes = {};
@@ -102,7 +135,6 @@ function createLudoBoardTexture() {
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, 1024, 1024);
 
-  // 4 Corner Base Quadrants
   const bases = [
     [0, 9, COLORS[0]],
     [0, 0, COLORS[1]],
@@ -131,7 +163,6 @@ function createLudoBoardTexture() {
     });
   });
 
-  // Track Grid Cells with Crisp Borders
   for (let gx = 0; gx < 15; gx++) {
     for (let gy = 0; gy < 15; gy++) {
       if ((gx < 6 && gy < 6) || (gx > 8 && gy < 6) || (gx < 6 && gy > 8) || (gx > 8 && gy > 8)) continue;
@@ -144,7 +175,6 @@ function createLudoBoardTexture() {
     }
   }
 
-  // Colored Home Stretches & Start Squares
   HOME_STRETCH.forEach((path, pIdx) => {
     path.slice(0, 5).forEach(([gx, gy]) => {
       ctx.fillStyle = COLORS[pIdx];
@@ -161,7 +191,6 @@ function createLudoBoardTexture() {
     ctx.strokeRect(sx * S, sy * S, S, S);
   });
 
-  // Safe Stars (★)
   SAFE_INDICES.forEach(idx => {
     const [gx, gy] = MAIN_TRACK[idx];
     const isColoredStart = [0, 13, 26, 39].includes(idx);
@@ -179,7 +208,6 @@ function createLudoBoardTexture() {
     ctx.fillText('★', gx * S + S / 2, gy * S + S / 2 + 2);
   });
 
-  // Center 4-Color Home Triangle Crown
   const cx = 512, cy = 512;
   const x1 = 6 * S, y1 = 6 * S, x2 = 9 * S, y2 = 9 * S;
   const tris = [
@@ -236,6 +264,9 @@ function initThreeBoard() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f172a);
 
+  boardGroup = new THREE.Group();
+  scene.add(boardGroup);
+
   camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
   camera.position.set(0, 18.5, 10.5);
   camera.lookAt(0, 0, 0.4);
@@ -244,14 +275,11 @@ function initThreeBoard() {
   renderer.setSize(420, 420);
   container.appendChild(renderer.domElement);
 
-  boardGroup = new THREE.Group();
-  scene.add(boardGroup);
   scene.add(new THREE.AmbientLight(0xffffff, 0.85));
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
   dirLight.position.set(6, 22, 10);
   scene.add(dirLight);
 
-  // Wooden Frame Base
   const woodBase = new THREE.Mesh(
     new THREE.BoxGeometry(15.8, 0.7, 15.8),
     new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.4 })
@@ -259,7 +287,6 @@ function initThreeBoard() {
   woodBase.position.y = -0.36;
   boardGroup.add(woodBase);
 
-  // Authentic High-Res Ludo Board Top Plane
   const boardTex = createLudoBoardTexture();
   const boardMesh = new THREE.Mesh(
     new THREE.BoxGeometry(15, 0.15, 15),
@@ -268,11 +295,9 @@ function initThreeBoard() {
   boardMesh.position.y = 0.05;
   boardGroup.add(boardMesh);
 
-  // Dynamic 3D Floating Secret Power-Up & Trap Badges (Visible ONLY to owner!)
   chaosMeshes = {};
   syncSecretMeshes();
 
-  // Create 3D Teardrop Pawns
   for (let pIdx = 0; pIdx < 4; pIdx++) {
     for (let tIdx = 0; tIdx < 4; tIdx++) {
       const group = new THREE.Group();
@@ -323,7 +348,6 @@ function toggleCameraView() {
   cameraTopDown = !cameraTopDown;
   document.getElementById('cam-btn').innerText = cameraTopDown ? '🎥 TOP' : '🎥 3D';
   if (cameraTopDown) {
-    // Keep Z slightly positive (+0.05) so North/South orientation never flips upside down!
     camera.position.set(0, 22.5, 0.05);
     camera.lookAt(0, 0, 0);
   } else {
@@ -352,7 +376,6 @@ function syncSecretMeshes() {
   const activeItems = state.secretItems || [];
   const viewerSeat = (gameMode === 'local') ? state.turn : (mySeat || 0);
 
-  // Remove old or triggered sprites
   Object.keys(chaosMeshes).forEach(id => {
     const found = activeItems.find(it => it.id === id && !it.used);
     if (!found) {
@@ -361,7 +384,6 @@ function syncSecretMeshes() {
     }
   });
 
-  // Create or toggle visibility so ONLY the owner sees their own traps/powerups!
   activeItems.forEach(item => {
     if (item.used) return;
     let spr = chaosMeshes[item.id];
@@ -377,8 +399,8 @@ function syncSecretMeshes() {
 }
 
 function syncThreePawns() {
-  syncSecretMeshes();
   if (boardGroup) boardGroup.rotation.y = -(mySeat || 0) * (Math.PI / 2);
+  syncSecretMeshes();
   if (!state.players.length) return;
   const movable = (state.phase === 'SELECT') ? getMovableTokens(state.turn, state.dice).map(t => t.id) : [];
 
@@ -463,6 +485,7 @@ let state = {
   dice: 1,
   phase: 'ROLL',
   chaosEnabled: true,
+  secretItems: [],
   clash: null
 };
 
@@ -472,7 +495,6 @@ function generateSecretItemsForPlayers(configs, chaosEnabled) {
   for (let i = 0; i < 52; i++) {
     if (!SAFE_INDICES.includes(i)) available.push(i);
   }
-  // Shuffle track squares randomly every game
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [available[i], available[j]] = [available[j], available[i]];
@@ -482,7 +504,6 @@ function generateSecretItemsForPlayers(configs, chaosEnabled) {
   let cursor = 0;
   configs.forEach((cfg, seat) => {
     if (!cfg.active) return;
-    // Give each active player 4 random power-ups/traps (1 of each type or shuffled)
     const shuffledPool = [...SECRET_ITEM_POOL].sort(() => Math.random() - 0.5);
     shuffledPool.forEach((tpl, idx) => {
       if (cursor >= available.length) return;
@@ -545,7 +566,6 @@ function hostOnlineGame() {
   peer.on('connection', conn => {
     conn.on('data', d => {
       if (d.type === 'HELLO') {
-        // Prevent same device/phone from joining multiple times!
         const existing = members.find(m => m.uuid === d.uuid);
         if (existing) {
           conn.send({ type: 'WELCOME', seat: existing.seat });
@@ -691,10 +711,8 @@ function sendEmote(emoji) {
   }
 }
 
-
-
 // ==========================================
-// 6. DICE, TOKEN MOVEMENT & LUCKY CHAOS TILES
+// 6. DICE, TOKEN MOVEMENT & SECRET POWER-UPS
 // ==========================================
 function canIControlCurrentTurn() {
   const cur = state.players[state.turn];
@@ -814,7 +832,6 @@ function finishMove(pIdx, token, dice) {
   if (token.steps <= 50) {
     const gIdx = (START_INDEX[pIdx] + token.steps) % 52;
 
-    // TRIGGER HIDDEN POWER-UP OR TRAP ON THIS SQUARE!
     const landedItem = (state.secretItems || []).find(it => !it.used && it.trackIdx === gIdx);
     if (landedItem) {
       landedItem.used = true;
@@ -849,16 +866,6 @@ function finishMove(pIdx, token, dice) {
   nextTurn(dice === 6);
 }
 
-function findAnyOpponentOnTrack(myP) {
-  for (let p = 0; p < 4; p++) {
-    if (p === myP || !state.players[p].active) continue;
-    for (let t of state.players[p].tokens) {
-      if (t.steps > 2 && t.steps <= 48) return { pIdx: p, token: t };
-    }
-  }
-  return null;
-}
-
 function findEnemyAt(myP, gIdx) {
   for (let p = 0; p < 4; p++) {
     if (p === myP || !state.players[p].active) continue;
@@ -872,13 +879,13 @@ function findEnemyAt(myP, gIdx) {
 }
 
 // ==========================================
-// 7. FLIPNOTE ANIME STICKMAN CLASH CUTSCENES!
+// 7. FLIPNOTE ANIME STICKMAN CLASH CUTSCENES + MEME AUDIO
 // ==========================================
 const STICKMAN_FINISHERS = [
-  { id: 'HAMMER_100T', title: '★ 100t HAMMER SMASH! ★', caption: 'SQUASHED FLAT BY 100 TONS!' },
-  { id: 'SPEAR_SLAM',  title: '★ METEOR SPEAR DIVE! ★', caption: 'CRATER IMPACT!! BACK TO BASE!' },
-  { id: 'GUN_BARRAGE', title: '★ RAPID ANIME BARRAGE! ★', caption: 'BLASTED INTO ORBIT!!' },
-  { id: 'FIRE_TRIDENT',title: '★ FLAME & TRIDENT COMBO! ★', caption: 'LAUNCHED OUT OF THE ARENA!' }
+  { id: 'HAMMER_100T',  title: '★ 100t HAMMER SMASH! ★',   caption: 'SQUASHED FLAT BY 100 TONS!' },
+  { id: 'SPEAR_SLAM',   title: '★ METEOR SPEAR DIVE! ★',   caption: 'CRATER IMPACT!! BACK TO BASE!' },
+  { id: 'GUN_BARRAGE',  title: '★ RAPID ANIME BARRAGE! ★', caption: 'BLASTED INTO ORBIT!!' },
+  { id: 'FIRE_TRIDENT', title: '★ FLAME & TRIDENT COMBO! ★', caption: 'LAUNCHED OUT OF THE ARENA!' }
 ];
 
 function playAnimeImpactSFX(step) {
@@ -897,11 +904,23 @@ function playAnimeImpactSFX(step) {
 }
 
 function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
-  const attackerWins = Math.random() < 0.78;
+  const meme = triggerIndianMemeSound();
+  const memeText = meme ? meme.text : 'GOTI CUT!!';
+
+  if (Math.random() < 0.70) {
+    SFX.bonk();
+    showToast(`${COLOR_NAMES[atkP]}: ${memeText}`);
+    state.players[defP].tokens[defT].steps = -1;
+    broadcastState();
+    setTimeout(() => nextTurn(true), 650);
+    return;
+  }
+
+  const attackerWins = Math.random() < 0.80;
   const gagIdx = Math.floor(Math.random() * STICKMAN_FINISHERS.length);
 
   state.phase = 'CLASH';
-  state.clash = { atkP, atkT, defP, defT, attackerWins, gagIdx };
+  state.clash = { atkP, atkT, defP, defT, attackerWins, gagIdx, memeText };
   broadcastState();
   playFunnyClashCutscene(state.clash);
 
@@ -916,7 +935,7 @@ function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
       state.clash = null;
       nextTurn(dice === 6);
     }
-  }, 2750);
+  }, 2650);
 }
 
 function drawStickman(ctx, x, y, dir, pose, strokeCol, badgeCol, scale = 1) {
@@ -930,7 +949,6 @@ function drawStickman(ctx, x, y, dir, pose, strokeCol, badgeCol, scale = 1) {
   ctx.lineJoin = 'round';
 
   if (pose === 'flat') {
-    // Squashed pancake stickman under 100t hammer!
     ctx.beginPath();
     ctx.ellipse(0, -3, 18, 4, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -940,24 +958,21 @@ function drawStickman(ctx, x, y, dir, pose, strokeCol, badgeCol, scale = 1) {
     return;
   }
 
-  // Head
   ctx.beginPath();
   ctx.arc(0, -36, 8, 0, Math.PI * 2);
   if (pose === 'victim' || pose === 'air') ctx.fill();
   else ctx.stroke();
 
-  // Player Color Headband / Crown Tag so you know who is who!
   ctx.fillStyle = badgeCol;
   ctx.fillRect(-7, -42, 14, 4);
 
-  // Torso & Limbs based on Anime Pose
   ctx.beginPath();
   if (pose === 'run') {
-    ctx.moveTo(-3, -28); ctx.lineTo(4, -14); // leaning forward
-    ctx.moveTo(4, -14); ctx.lineTo(14, 0);   // front leg
-    ctx.moveTo(4, -14); ctx.lineTo(-10, -4); // back leg
-    ctx.moveTo(0, -24); ctx.lineTo(14, -22); // front arm
-    ctx.moveTo(0, -24); ctx.lineTo(-12, -18);// back arm
+    ctx.moveTo(-3, -28); ctx.lineTo(4, -14);
+    ctx.moveTo(4, -14); ctx.lineTo(14, 0);
+    ctx.moveTo(4, -14); ctx.lineTo(-10, -4);
+    ctx.moveTo(0, -24); ctx.lineTo(14, -22);
+    ctx.moveTo(0, -24); ctx.lineTo(-12, -18);
   } else if (pose === 'jump') {
     ctx.moveTo(0, -28); ctx.lineTo(0, -14);
     ctx.moveTo(0, -14); ctx.lineTo(10, -6);
@@ -965,26 +980,22 @@ function drawStickman(ctx, x, y, dir, pose, strokeCol, badgeCol, scale = 1) {
     ctx.moveTo(0, -25); ctx.lineTo(12, -38);
     ctx.moveTo(0, -25); ctx.lineTo(-12, -34);
   } else if (pose === 'air') {
-    // Ragdoll flying through air
     ctx.moveTo(0, -28); ctx.lineTo(-12, -18);
     ctx.moveTo(-12, -18); ctx.lineTo(-22, -24);
     ctx.moveTo(-12, -18); ctx.lineTo(-18, -10);
     ctx.moveTo(-4, -24); ctx.lineTo(8, -32);
   } else if (pose === 'gun') {
-    // Recoil gun stance (like 0:15 in video)
     ctx.moveTo(-4, -28); ctx.lineTo(-2, -14);
     ctx.moveTo(-2, -14); ctx.lineTo(10, 0);
     ctx.moveTo(-2, -14); ctx.lineTo(-12, 0);
     ctx.moveTo(-3, -25); ctx.lineTo(14, -32);
     ctx.stroke();
-    // Pixel Gun
     ctx.fillStyle = strokeCol;
     ctx.fillRect(12, -37, 11, 5);
     ctx.fillRect(12, -33, 4, 6);
     ctx.restore();
     return;
   } else {
-    // Idle / Victim stance
     ctx.moveTo(0, -28); ctx.lineTo(0, -13);
     ctx.moveTo(0, -13); ctx.lineTo(8, 0);
     ctx.moveTo(0, -13); ctx.lineTo(-8, 0);
@@ -1005,9 +1016,11 @@ function playFunnyClashCutscene(clash) {
 
   document.getElementById('clash-title').innerText = gag.title;
   document.getElementById('clash-caption').innerText =
-    clash.attackerWins
-      ? `${COLOR_NAMES[winnerP]} WRECKED ${COLOR_NAMES[loserP]}! ${gag.caption}`
-      : `REVERSAL! ${COLOR_NAMES[winnerP]} COUNTERED ${COLOR_NAMES[loserP]}!`;
+    clash.memeText
+      ? clash.memeText
+      : (clash.attackerWins
+          ? `${COLOR_NAMES[winnerP]} WRECKED ${COLOR_NAMES[loserP]}! ${gag.caption}`
+          : `REVERSAL! ${COLOR_NAMES[winnerP]} COUNTERED ${COLOR_NAMES[loserP]}!`);
 
   const c = document.getElementById('clash-canvas');
   const cx = c.getContext('2d');
@@ -1019,7 +1032,6 @@ function playFunnyClashCutscene(clash) {
     f++;
     if (f > 54) { clearInterval(anim); return; }
 
-    // Flipnote Signature Black-on-White vs White-on-Black Impact Frame Inversion!
     const isImpactInvert =
       (gag.id === 'HAMMER_100T' && (f === 26 || f === 27)) ||
       (gag.id === 'SPEAR_SLAM'  && (f === 24 || f === 25 || f === 26)) ||
@@ -1032,7 +1044,6 @@ function playFunnyClashCutscene(clash) {
     cx.fillStyle = bg;
     cx.fillRect(0, 0, 320, 170);
 
-    // Flipnote Ground Line
     cx.strokeStyle = fg;
     cx.lineWidth = 3;
     cx.beginPath();
@@ -1043,9 +1054,6 @@ function playFunnyClashCutscene(clash) {
     const winCol = COLORS[winnerP];
     const loseCol = COLORS[loserP];
 
-    // -----------------------------------------
-    // FINISHER 1: 100t GIANT HAMMER (Video 0:12)
-    // -----------------------------------------
     if (gag.id === 'HAMMER_100T') {
       if (f === 26) playAnimeImpactSFX('hit');
       const wx = f < 16 ? 60 + f * 7 : 172;
@@ -1055,17 +1063,13 @@ function playFunnyClashCutscene(clash) {
       drawStickman(cx, 225, 145, -1, loserPose, fg, loseCol);
       drawStickman(cx, wx, wy, 1, f < 26 ? 'jump' : 'run', fg, winCol);
 
-      // Giant 100t Mallet
       if (f >= 16) {
         cx.save();
         cx.translate(wx + 24, wy - 18);
-        const angle = f < 26 ? -0.9 : 0.05;
-        cx.rotate(angle);
-        // Handle
+        cx.rotate(f < 26 ? -0.9 : 0.05);
         cx.strokeStyle = fg;
         cx.lineWidth = 4;
         cx.beginPath(); cx.moveTo(-18, 0); cx.lineTo(25, 0); cx.stroke();
-        // Big Barrel Head
         cx.fillStyle = fg;
         cx.fillRect(14, -26, 36, 52);
         cx.fillStyle = bg;
@@ -1081,12 +1085,7 @@ function playFunnyClashCutscene(clash) {
         cx.moveTo(265, 145); cx.lineTo(285, 125);
         cx.stroke();
       }
-    }
-
-    // -----------------------------------------
-    // FINISHER 2: SPEAR METEOR SLAM (Video 0:06-0:07)
-    // -----------------------------------------
-    else if (gag.id === 'SPEAR_SLAM') {
+    } else if (gag.id === 'SPEAR_SLAM') {
       if (f === 24) playAnimeImpactSFX('hit');
       if (f < 24) {
         const diveT = f / 24;
@@ -1094,7 +1093,6 @@ function playFunnyClashCutscene(clash) {
         const wy = 25 + diveT * 115;
         drawStickman(cx, 220, 145, -1, 'victim', fg, loseCol);
         drawStickman(cx, wx, wy, 1, 'jump', fg, winCol);
-        // Diagonal Spear
         cx.strokeStyle = fg;
         cx.lineWidth = 3;
         cx.beginPath();
@@ -1102,7 +1100,6 @@ function playFunnyClashCutscene(clash) {
         cx.lineTo(wx + 24, wy - 5);
         cx.stroke();
       } else {
-        // Crater shockwave explosion!
         const fly = (f - 24) * 11;
         drawStickman(cx, 210, 145, 1, 'run', fg, winCol);
         drawStickman(cx, 230 + fly, 130 - fly * 0.9, -1, 'air', fg, loseCol);
@@ -1115,12 +1112,7 @@ function playFunnyClashCutscene(clash) {
           cx.stroke();
         }
       }
-    }
-
-    // -----------------------------------------
-    // FINISHER 3: RAPID GUN BARRAGE + MEGA BOOM (Video 0:14-0:19)
-    // -----------------------------------------
-    else if (gag.id === 'GUN_BARRAGE') {
+    } else if (gag.id === 'GUN_BARRAGE') {
       if (f === 18 || f === 24 || f === 30 || f === 36) playAnimeImpactSFX('shot');
       if (f === 46) playAnimeImpactSFX('boom');
 
@@ -1132,7 +1124,6 @@ function playFunnyClashCutscene(clash) {
         drawStickman(cx, lx, ly, -1, f < 14 ? 'victim' : 'air', fg, loseCol);
       }
 
-      // Muzzle flash & Bullet Streaks
       if (f >= 16 && f < 46 && f % 2 === 0) {
         cx.strokeStyle = fg;
         cx.lineWidth = 2.5;
@@ -1140,13 +1131,11 @@ function playFunnyClashCutscene(clash) {
         cx.moveTo(92, 110);
         cx.lineTo(lx - 8, ly - 20 + (Math.random() - 0.5) * 14);
         cx.stroke();
-        // Muzzle burst
         cx.beginPath();
         cx.arc(94, 110, 8, 0, Math.PI * 2);
         cx.stroke();
       }
 
-      // Mega Screen-Filling Explosion Circle (Video 0:19)
       if (f >= 46) {
         const rad = (f - 45) * 26;
         cx.strokeStyle = fg;
@@ -1155,12 +1144,7 @@ function playFunnyClashCutscene(clash) {
         cx.arc(265, 45, rad, 0, Math.PI * 2);
         cx.stroke();
       }
-    }
-
-    // -----------------------------------------
-    // FINISHER 4: FLAME UPPERCUT & TRIDENT LAUNCH (Video 0:04-0:10)
-    // -----------------------------------------
-    else {
+    } else {
       if (f === 20 || f === 32) playAnimeImpactSFX('hit');
       const wx = f < 18 ? 60 + f * 7 : 186;
       const ly = f < 20 ? 145 : (f < 32 ? 145 - (f - 20) * 6 : 73 - (f - 32) * 8);
@@ -1169,7 +1153,6 @@ function playFunnyClashCutscene(clash) {
       drawStickman(cx, wx, 145, 1, f < 20 ? 'run' : 'jump', fg, winCol);
       drawStickman(cx, lx, ly, -1, f < 20 ? 'victim' : 'air', fg, loseCol);
 
-      // Flame Hand Effect (Video 0:04)
       if (f >= 16 && f < 28) {
         cx.strokeStyle = fg;
         cx.lineWidth = 2.5;
@@ -1181,14 +1164,12 @@ function playFunnyClashCutscene(clash) {
         cx.stroke();
       }
 
-      // Giant Trident Thrust (Video 0:10)
       if (f >= 28) {
         cx.strokeStyle = fg;
         cx.lineWidth = 3;
         cx.beginPath();
         cx.moveTo(wx + 8, 122);
         cx.lineTo(wx + 58, 86);
-        // 3 Prongs
         cx.moveTo(wx + 58, 86); cx.lineTo(wx + 70, 74);
         cx.moveTo(wx + 52, 82); cx.lineTo(wx + 64, 70);
         cx.moveTo(wx + 62, 92); cx.lineTo(wx + 74, 80);
@@ -1199,16 +1180,9 @@ function playFunnyClashCutscene(clash) {
 }
 
 // ==========================================
-// 8. HUD & TOASTS
+// 8. PER-PLAYER PERSPECTIVE HUD & TOASTS
 // ==========================================
-function updateHUD() {
-  state.players.forEach((p, idx) => {
-    const card = document.getElementById(`pcard-${idx}`);
-    if (!p.active) { card.style.visibility = 'hidden'; return; }
-    card.style.visibility = 'visible';
-    card.classList.toggle('active-turn', state.turn === idx);
-    documentfunction getVisualSlotForSeat(seat) {
-  // Visual slot 0 = Bottom-Left, 1 = Top-Left, 2 = Top-Right, 3 = Bottom-Right
+function getVisualSlotForSeat(seat) {
   return (seat - (mySeat || 0) + 4) % 4;
 }
 
