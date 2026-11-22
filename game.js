@@ -62,7 +62,12 @@ const MAIN_TRACK = [
 
 const START_INDEX = [0, 13, 26, 39];
 const SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
-const CHAOS_INDICES = [4, 11, 17, 24, 30, 37, 43, 50];
+const SECRET_ITEM_POOL = [
+  { type: 'BOOST', emoji: '⚡', bg: '#16a34a', toast: '⚡ SECRET BOOST +4 STEPS!' },
+  { type: 'EXTRA', emoji: '🎲', bg: '#2563eb', toast: '🎲 SECRET EXTRA TURN!' },
+  { type: 'BOMB',  emoji: '💣', bg: '#dc2626', toast: '💣 HIDDEN BOMB -3 STEPS!' },
+  { type: 'WARP',  emoji: '🌀', bg: '#9333ea', toast: '🌀 SECRET WARP TO START!' }
+];
 
 const HOME_STRETCH = [
   [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]],
@@ -263,18 +268,9 @@ function initThreeBoard() {
   boardMesh.position.y = 0.05;
   boardGroup.add(boardMesh);
 
-  // Visible 3D Floating Power-Up & Trap Badges on Track
+  // Dynamic 3D Floating Secret Power-Up & Trap Badges (Visible ONLY to owner!)
   chaosMeshes = {};
-  if (state.chaosEnabled) {
-    CHAOS_INDICES.forEach((trackIdx, i) => {
-      const [gx, gy] = MAIN_TRACK[trackIdx];
-      const isBomb = (i % 2 === 1);
-      const badge = makeEmojiSprite(isBomb ? '💣' : '❓', isBomb ? '#dc2626' : '#9333ea');
-      badge.position.set(gx - 7, 0.45, gy - 7);
-      boardGroup.add(badge);
-      chaosMeshes[trackIdx] = badge;
-    });
-  }
+  syncSecretMeshes();
 
   // Create 3D Teardrop Pawns
   for (let pIdx = 0; pIdx < 4; pIdx++) {
@@ -351,7 +347,37 @@ function getGridCoordsForToken(pIdx, token) {
   return { gx: hx, gy: hy, key: `H-${pIdx}-${hIdx}` };
 }
 
+function syncSecretMeshes() {
+  if (!boardGroup) return;
+  const activeItems = state.secretItems || [];
+  const viewerSeat = (gameMode === 'local') ? state.turn : (mySeat || 0);
+
+  // Remove old or triggered sprites
+  Object.keys(chaosMeshes).forEach(id => {
+    const found = activeItems.find(it => it.id === id && !it.used);
+    if (!found) {
+      boardGroup.remove(chaosMeshes[id]);
+      delete chaosMeshes[id];
+    }
+  });
+
+  // Create or toggle visibility so ONLY the owner sees their own traps/powerups!
+  activeItems.forEach(item => {
+    if (item.used) return;
+    let spr = chaosMeshes[item.id];
+    if (!spr) {
+      spr = makeEmojiSprite(item.emoji, item.bg);
+      const [gx, gy] = MAIN_TRACK[item.trackIdx];
+      spr.position.set(gx - 7, 0.48, gy - 7);
+      boardGroup.add(spr);
+      chaosMeshes[item.id] = spr;
+    }
+    spr.visible = (item.owner === viewerSeat);
+  });
+}
+
 function syncThreePawns() {
+  syncSecretMeshes();
   if (boardGroup) boardGroup.rotation.y = -(mySeat || 0) * (Math.PI / 2);
   if (!state.players.length) return;
   const movable = (state.phase === 'SELECT') ? getMovableTokens(state.turn, state.dice).map(t => t.id) : [];
@@ -440,6 +466,41 @@ let state = {
   clash: null
 };
 
+function generateSecretItemsForPlayers(configs, chaosEnabled) {
+  if (!chaosEnabled) return [];
+  const available = [];
+  for (let i = 0; i < 52; i++) {
+    if (!SAFE_INDICES.includes(i)) available.push(i);
+  }
+  // Shuffle track squares randomly every game
+  for (let i = available.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [available[i], available[j]] = [available[j], available[i]];
+  }
+
+  const items = [];
+  let cursor = 0;
+  configs.forEach((cfg, seat) => {
+    if (!cfg.active) return;
+    // Give each active player 4 random power-ups/traps (1 of each type or shuffled)
+    const shuffledPool = [...SECRET_ITEM_POOL].sort(() => Math.random() - 0.5);
+    shuffledPool.forEach((tpl, idx) => {
+      if (cursor >= available.length) return;
+      items.push({
+        id: `S-${seat}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        owner: seat,
+        trackIdx: available[cursor++],
+        type: tpl.type,
+        emoji: tpl.emoji,
+        bg: tpl.bg,
+        toast: tpl.toast,
+        used: false
+      });
+    });
+  });
+  return items;
+}
+
 function createInitialState(configs, fastStart, chaosEnabled) {
   return {
     players: configs.map((c, idx) => ({
@@ -456,6 +517,7 @@ function createInitialState(configs, fastStart, chaosEnabled) {
     dice: 1,
     phase: 'ROLL',
     chaosEnabled,
+    secretItems: generateSecretItemsForPlayers(configs, chaosEnabled),
     clash: null
   };
 }
@@ -752,32 +814,23 @@ function finishMove(pIdx, token, dice) {
   if (token.steps <= 50) {
     const gIdx = (START_INDEX[pIdx] + token.steps) % 52;
 
-    // LUCKY "?" CHAOS TILE EVENT!
-    if (state.chaosEnabled && CHAOS_INDICES.includes(gIdx)) {
+    // TRIGGER HIDDEN POWER-UP OR TRAP ON THIS SQUARE!
+    const landedItem = (state.secretItems || []).find(it => !it.used && it.trackIdx === gIdx);
+    if (landedItem) {
+      landedItem.used = true;
       SFX.chaos();
-      const rollChaos = Math.floor(Math.random() * 4);
-      if (rollChaos === 0) {
+      const ownerLabel = landedItem.owner === pIdx ? 'YOUR' : `${COLOR_NAMES[landedItem.owner]}'S`;
+      showToast(`${ownerLabel} ${landedItem.toast}`);
+
+      if (landedItem.type === 'BOOST') {
         token.steps = Math.min(55, token.steps + 4);
-        showToast('🚀 ROCKET BOOST +4!');
-      } else if (rollChaos === 1) {
-        token.steps = Math.max(0, token.steps - 2);
-        showToast('🍌 BANANA SLIP -2!');
-      } else if (rollChaos === 2) {
-        showToast('🎲 LUCKY EXTRA TURN!');
+      } else if (landedItem.type === 'BOMB') {
+        token.steps = Math.max(0, token.steps - 3);
+      } else if (landedItem.type === 'WARP') {
+        token.steps = 0;
+      } else if (landedItem.type === 'EXTRA') {
         nextTurn(true);
         return;
-      } else {
-        // Swap with an active opponent token on track!
-        const swappable = findAnyOpponentOnTrack(pIdx);
-        if (swappable) {
-          const myOld = token.steps;
-          token.steps = swappable.token.steps;
-          swappable.token.steps = myOld;
-          showToast(`🔄 SWAPPED WITH ${COLOR_NAMES[swappable.pIdx]}!`);
-        } else {
-          token.steps = Math.min(55, token.steps + 3);
-          showToast('⚡ SPEED SURGE +3!');
-        }
       }
     }
 
