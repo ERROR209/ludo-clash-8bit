@@ -11,27 +11,34 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
-  <!-- CLEAN FUN LOBBY -->
+  <!-- CLEAN FUN LOBBY WITH CUSTOM CHAOS SETTINGS -->
   <div id="menu-screen" class="screen active">
     <div class="royal-card">
       <div class="crown-icon">👑</div>
       <h1 class="royal-title">LUDO PARTY 3D</h1>
-      <div class="royal-badge">FUN & CHAOS EDITION</div>
+      <div class="royal-badge">CUSTOM CHAOS EDITION</div>
 
       <div class="name-box">
         <label>YOUR NICKNAME</label>
         <input type="text" id="player-name" maxlength="10" placeholder="Enter Name" value="Player1" />
       </div>
 
-      <div class="toggles-row">
-        <label class="toggle-chip">
-          <input type="checkbox" id="opt-fast-start" checked />
-          <span>⚡ Fast Start</span>
-        </label>
-        <label class="toggle-chip">
-          <input type="checkbox" id="opt-chaos" checked />
-          <span>❓ Lucky Chaos</span>
-        </label>
+      <!-- CUSTOMIZABLE PARTY CHAOS MODES (ON/OFF) -->
+      <div class="chaos-drawer">
+        <div class="drawer-header" onclick="toggleChaosDrawer()">
+          <span>⚙️ PARTY CHAOS MODES (ON/OFF)</span>
+          <span id="drawer-arrow">▼</span>
+        </div>
+        <div id="chaos-grid" class="chaos-grid">
+          <label class="toggle-chip"><input type="checkbox" id="opt-fast-start" checked /><span>⚡ Fast Start</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-chaos" checked /><span>💣 Secret Traps</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-fake6" checked /><span>🎲 Fake 6 Prank</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-magnet" checked /><span>🧲 Chumbak Goti</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-quake" checked /><span>🌪️ Bhukamp Shuffle</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-murga" checked /><span>🐔 Murga Penalty</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-bounty" checked /><span>🎯 Supari Bounty</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-soundboard" checked /><span>🎤 Meme Mic</span></label>
+        </div>
       </div>
 
       <div class="menu-stack">
@@ -89,13 +96,13 @@
       <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
     </div>
 
-    <!-- FUN SOUND EMOTE BAR -->
+    <!-- FUN EMOTE + LIVE MEME ROAST BAR -->
     <div class="emote-bar">
       <button onclick="sendEmote('😂')">😂</button>
       <button onclick="sendEmote('😭')">😭</button>
       <button onclick="sendEmote('🔥')">🔥</button>
-      <button onclick="sendEmote('😱')">😱</button>
-      <button onclick="sendEmote('👑')">👑</button>
+      <button onclick="sendEmote('🐔')">🐔</button>
+      <button id="meme-mic-btn" class="mic-btn" onclick="triggerLiveMemeRoast()">🎤 ROAST</button>
     </div>
 
     <div class="hud-row">
@@ -134,7 +141,7 @@
     </div>
   </div>
 
-  <!-- INSTANT 3-SECOND FUNNY 8-BIT CLASH CUTSCENE (ZERO BUTTONS!) -->
+  <!-- INSTANT FLIPNOTE ANIME STICKMAN CLASH CUTSCENE -->
   <div id="clash-modal" class="retro-overlay hidden">
     <div class="retro-console">
       <div class="retro-top-bar" id="clash-title">★ 8-BIT CLASH! ★</div>
@@ -145,12 +152,12 @@
     </div>
   </div>
 
-  <!-- WINNER MODAL -->
+  <!-- WINNER + FUNNY PARTY AWARDS MODAL -->
   <div id="winner-modal" class="retro-overlay hidden">
     <div class="royal-card">
       <div class="crown-icon">🏆</div>
       <h2 id="winner-title" class="royal-title">RED WINS!</h2>
-      <p style="color:#dbeafe;margin:10px 0 18px;">Ludo Party Champion!</p>
+      <div id="awards-box" class="awards-box"></div>
       <button class="glossy-btn btn-green" onclick="location.reload()">PLAY AGAIN</button>
     </div>
   </div>

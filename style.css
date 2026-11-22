@@ -309,3 +309,64 @@ body {
   background: #0f172a; border: 2px solid #38bdf8; color: #fde047;
   font-size: 9px; line-height: 1.5; padding: 8px; text-align: center;
 }
+
+/* PARTY CHAOS SETTINGS DRAWER */
+.chaos-drawer {
+  background: rgba(15, 23, 42, 0.82);
+  border: 2px solid #60a5fa;
+  border-radius: 14px;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: #facc15;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.chaos-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  margin-top: 7px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.chaos-grid .toggle-chip {
+  font-size: 9.5px;
+  padding: 5px 4px;
+  justify-content: flex-start;
+  padding-left: 7px;
+}
+.mic-btn {
+  background: linear-gradient(180deg, #ef4444, #b91c1c) !important;
+  border-color: #facc15 !important;
+  color: #fff;
+  font-size: 11px !important;
+  font-weight: 800;
+}
+.awards-box {
+  background: #0f172a;
+  border: 2px solid #38bdf8;
+  border-radius: 12px;
+  padding: 10px;
+  margin: 10px 0 14px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: #fde047;
+  text-align: left;
+}
+@keyframes quakeShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-6px, 4px) rotate(-1.5deg); }
+  40% { transform: translate(6px, -4px) rotate(1.5deg); }
+  60% { transform: translate(-5px, -3px) rotate(-1deg); }
+  80% { transform: translate(5px, 3px) rotate(1deg); }
+}
+.quake-active {
+  animation: quakeShake 0.45s ease-in-out 2;
+}

@@ -64,6 +64,26 @@ const SFX = {
   win:   () => [523, 659, 784, 1046, 784, 1046].forEach((f, i) => playTone(f, 'triangle', 0.15, i * 0.1, 0.16))
 };
 
+function toggleChaosDrawer() {
+  const grid = document.getElementById('chaos-grid');
+  const arrow = document.getElementById('drawer-arrow');
+  grid.classList.toggle('hidden');
+  arrow.innerText = grid.classList.contains('hidden') ? '▶' : '▼';
+}
+
+function readLobbyOptions() {
+  return {
+    fastStart:  document.getElementById('opt-fast-start')?.checked ?? true,
+    chaos:      document.getElementById('opt-chaos')?.checked ?? true,
+    fake6:      document.getElementById('opt-fake6')?.checked ?? true,
+    magnet:     document.getElementById('opt-magnet')?.checked ?? true,
+    quake:      document.getElementById('opt-quake')?.checked ?? true,
+    murga:      document.getElementById('opt-murga')?.checked ?? true,
+    bounty:     document.getElementById('opt-bounty')?.checked ?? true,
+    soundboard: document.getElementById('opt-soundboard')?.checked ?? true
+  };
+}
+
 function toggleSound() {
   soundEnabled = !soundEnabled;
   document.getElementById('sound-btn').innerText = soundEnabled ? '🔊' : '🔇';
@@ -489,8 +509,12 @@ let state = {
   clash: null
 };
 
-function generateSecretItemsForPlayers(configs, chaosEnabled) {
-  if (!chaosEnabled) return [];
+function generateSecretItemsForPlayers(configs, opts) {
+  if (!opts.chaos) return [];
+  const pool = [...SECRET_ITEM_POOL];
+  if (opts.magnet) pool.push({ type: 'MAGNET', emoji: '🧲', bg: '#f59e0b', toast: '🧲 CHUMBAK GOTI! PULLED ENEMY!' });
+  if (opts.quake)  pool.push({ type: 'QUAKE',  emoji: '🌪️', bg: '#06b6d4', toast: '🌪️ BHUKAMP! ALL TOKENS SHUFFLED!' });
+  
   const available = [];
   for (let i = 0; i < 52; i++) {
     if (!SAFE_INDICES.includes(i)) available.push(i);
@@ -504,7 +528,7 @@ function generateSecretItemsForPlayers(configs, chaosEnabled) {
   let cursor = 0;
   configs.forEach((cfg, seat) => {
     if (!cfg.active) return;
-    const shuffledPool = [...SECRET_ITEM_POOL].sort(() => Math.random() - 0.5);
+    const shuffledPool = [...pool].sort(() => Math.random() - 0.5).slice(0, 4);
     shuffledPool.forEach((tpl, idx) => {
       if (cursor >= available.length) return;
       items.push({
@@ -522,23 +546,27 @@ function generateSecretItemsForPlayers(configs, chaosEnabled) {
   return items;
 }
 
-function createInitialState(configs, fastStart, chaosEnabled) {
+function createInitialState(configs, opts) {
   return {
     players: configs.map((c, idx) => ({
       id: idx,
       name: c.name,
       isBot: c.isBot,
       active: c.active,
+      kills: 0,
+      deaths: 0,
+      trapsHit: 0,
+      isMurga: false,
       tokens: [0, 1, 2, 3].map(tId => ({
         id: tId,
-        steps: (fastStart && tId === 0) ? 0 : -1
+        steps: (opts.fastStart && tId === 0) ? 0 : -1
       }))
     })),
     turn: 0,
     dice: 1,
     phase: 'ROLL',
-    chaosEnabled,
-    secretItems: generateSecretItemsForPlayers(configs, chaosEnabled),
+    opts,
+    secretItems: generateSecretItemsForPlayers(configs, opts),
     clash: null
   };
 }
@@ -631,6 +659,9 @@ function joinOnlineGame() {
         switchToGameScreen();
         if (state.phase === 'CLASH' && !wasClash && state.clash) playFunnyClashCutscene(state.clash);
         updateHUD();
+      } else if (d.type === 'ROAST') {
+        triggerIndianMemeSound();
+        showToast(`🎤 ${state.players[d.seat]?.name}: ${d.text}`);
       } else if (d.type === 'EMOTE') {
         showEmoteBubble(d.seat, d.emoji);
       }
@@ -689,7 +720,11 @@ function sendActionToHost(obj) {
 function handleRemoteAction(seat, data) {
   if (data.action === 'ROLL' && state.turn === seat && state.phase === 'ROLL') executeRoll();
   else if (data.action === 'MOVE' && state.turn === seat && state.phase === 'SELECT') executeTokenMove(seat, data.tokenId);
-  else if (data.action === 'EMOTE') {
+  else if (data.action === 'ROAST') {
+    triggerIndianMemeSound();
+    showToast(`🎤 ${state.players[seat]?.name}: ${data.text}`);
+    connections.forEach(c => { if (c.open) c.send({ type: 'ROAST', seat, text: data.text }); });
+  } else if (data.action === 'EMOTE') {
     showEmoteBubble(seat, data.emoji);
     connections.forEach(c => { if (c.open) c.send({ type: 'EMOTE', seat, emoji: data.emoji }); });
   }
@@ -704,7 +739,7 @@ function startLocalGame(mode) {
     ? [{ name: p1, isBot: false, active: true }, { name: 'CPU', isBot: true, active: true }, { name: '', isBot: false, active: false }, { name: '', isBot: false, active: false }]
     : [{ name: p1, isBot: false, active: true }, { name: 'PLAYER 2', isBot: false, active: true }, { name: '', isBot: false, active: false }, { name: '', isBot: false, active: false }];
 
-  state = createInitialState(configs, document.getElementById('opt-fast-start').checked, document.getElementById('opt-chaos').checked);
+  state = createInitialState(configs, readLobbyOptions());
   switchToGameScreen();
   updateHUD();
 }
@@ -756,9 +791,26 @@ function executeRoll() {
 
   setTimeout(() => {
     cube.classList.remove('rolling');
-    const roll = Math.floor(Math.random() * 6) + 1;
+    let roll = Math.floor(Math.random() * 6) + 1;
+    // FAKE 6 PRANK MODE: 20% chance a 6 turns into a 1 after 0.6s!
+    if (state.opts?.fake6 && roll === 6 && Math.random() < 0.22) {
+      state.dice = 6;
+      updateHUD();
+      broadcastState();
+      setTimeout(() => {
+        state.dice = 1;
+        triggerIndianMemeSound();
+        showToast('🎲 FAKE 6 PRANK! MOYE MOYE -> 1!');
+        continueAfterRoll(1);
+      }, 650);
+      return;
+    }
     state.dice = roll;
+    continueAfterRoll(roll);
+  }, 360);
+}
 
+function continueAfterRoll(roll) {
     const valid = getMovableTokens(state.turn, roll);
     if (valid.length === 0) {
       updateHUD();
@@ -777,7 +829,6 @@ function executeRoll() {
         setTimeout(() => executeTokenMove(state.turn, valid[0].id), 450);
       }
     }
-  }, 360);
 }
 
 function getMovableTokens(pIdx, dice) {
@@ -841,6 +892,7 @@ function finishMove(pIdx, token, dice) {
     if (state.players[pIdx].tokens.every(t => t.steps === 56)) {
       SFX.win();
       document.getElementById('winner-title').innerText = `${state.players[pIdx].name} WINS!`;
+      showEndGameAwards(pIdx);
       document.getElementById('winner-modal').classList.remove('hidden');
       return;
     }
@@ -867,6 +919,15 @@ function finishMove(pIdx, token, dice) {
       } else if (landedItem.type === 'EXTRA') {
         nextTurn(true);
         return;
+      } else if (landedItem.type === 'MAGNET') {
+        // Pull nearest opponent within 5 steps onto this square and capture!
+        const victim = findNearbyOpponentWithin(pIdx, gIdx, 5);
+        if (victim) {
+          triggerInstantFunnyClash(pIdx, token.id, victim.pIdx, victim.token.id, dice);
+          return;
+        }
+      } else if (landedItem.type === 'QUAKE') {
+        triggerBhukampShuffle();
       }
     }
 
@@ -883,6 +944,49 @@ function finishMove(pIdx, token, dice) {
   }
 
   nextTurn(dice === 6);
+}
+
+
+function findNearbyOpponentWithin(myP, centerGIdx, range) {
+  for (let offset = -range; offset <= range; offset++) {
+    if (offset === 0) continue;
+    const checkIdx = (centerGIdx + offset + 52) % 52;
+    if (SAFE_INDICES.includes(checkIdx)) continue;
+    const found = findEnemyAt(myP, checkIdx);
+    if (found) return found;
+  }
+  return null;
+}
+
+function triggerBhukampShuffle() {
+  const frame = document.getElementById('three-container');
+  if (frame) {
+    frame.classList.remove('quake-active');
+    void frame.offsetWidth;
+    frame.classList.add('quake-active');
+  }
+  const onTrack = [];
+  state.players.forEach((p, pIdx) => {
+    if (!p.active) return;
+    p.tokens.forEach(t => {
+      if (t.steps > 0 && t.steps <= 50) onTrack.push(t);
+    });
+  });
+  if (onTrack.length >= 2) {
+    const stepsList = onTrack.map(t => t.steps).sort(() => Math.random() - 0.5);
+    onTrack.forEach((t, i) => { t.steps = stepsList[i]; });
+  }
+}
+
+function triggerLiveMemeRoast() {
+  if (state.opts && !state.opts.soundboard) return;
+  const seat = (gameMode === 'local') ? state.turn : mySeat;
+  const meme = triggerIndianMemeSound();
+  const txt = meme ? meme.text : 'ABBE SAALE!';
+  showToast(`🎤 ${state.players[seat]?.name || 'PLAYER'}: ${txt}`);
+  if (gameMode === 'online') {
+    sendActionToHost({ action: 'ROAST', text: txt });
+  }
 }
 
 function findEnemyAt(myP, gIdx) {
@@ -907,6 +1011,39 @@ const STICKMAN_FINISHERS = [
   { id: 'FIRE_TRIDENT', title: '★ FLAME & TRIDENT COMBO! ★', caption: 'LAUNCHED OUT OF THE ARENA!' }
 ];
 
+function getLeadingPlayerSeat() {
+  let bestSeat = -1, bestScore = -1;
+  state.players.forEach((p, idx) => {
+    if (!p.active) return;
+    const score = p.tokens.reduce((s, t) => s + Math.max(0, t.steps), 0);
+    if (score > bestScore) { bestScore = score; bestSeat = idx; }
+  });
+  return bestSeat;
+}
+
+function applyCaptureStats(winnerP, loserP) {
+  state.players[winnerP].kills = (state.players[winnerP].kills || 0) + 1;
+  state.players[loserP].deaths = (state.players[loserP].deaths || 0) + 1;
+  if (state.opts?.murga) {
+    state.players[winnerP].isMurga = false;
+    state.players[loserP].isMurga = true;
+  }
+}
+
+function showEndGameAwards(winnerIdx) {
+  const activePs = state.players.filter(p => p.active);
+  const topKiller = [...activePs].sort((a, b) => (b.kills || 0) - (a.kills || 0))[0];
+  const topVictim = [...activePs].sort((a, b) => (b.deaths || 0) - (a.deaths || 0))[0];
+
+  const box = document.getElementById('awards-box');
+  if (box) {
+    box.innerHTML =
+      `<div>👑 <b>Champion:</b> ${state.players[winnerIdx].name}</div>` +
+      `<div>🔪 <b>Serial Goti Killer:</b> ${topKiller?.name || '-'} (${topKiller?.kills || 0} cuts)</div>` +
+      `<div>😭 <b>Panauti Pro Max:</b> ${topVictim?.name || '-'} (${topVictim?.deaths || 0} times cut)</div>`;
+  }
+}
+
 function playAnimeImpactSFX(step) {
   if (!soundEnabled) return;
   if (step === 'dash') {
@@ -926,9 +1063,13 @@ function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
   const meme = triggerIndianMemeSound();
   const memeText = meme ? meme.text : 'GOTI CUT!!';
 
+  const leaderSeat = getLeadingPlayerSeat();
+  const isBountyKill = (state.opts?.bounty && defP === leaderSeat && atkP !== leaderSeat);
+
   if (Math.random() < 0.70) {
     SFX.bonk();
-    showToast(`${COLOR_NAMES[atkP]}: ${memeText}`);
+    applyCaptureStats(atkP, defP);
+    showToast(isBountyKill ? `🎯 SUPARI BOUNTY! ${memeText}` : `${COLOR_NAMES[atkP]}: ${memeText}`);
     state.players[defP].tokens[defT].steps = -1;
     broadcastState();
     setTimeout(() => nextTurn(true), 650);
@@ -946,10 +1087,12 @@ function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
   setTimeout(() => {
     document.getElementById('clash-modal').classList.add('hidden');
     if (attackerWins) {
+      applyCaptureStats(atkP, defP);
       state.players[defP].tokens[defT].steps = -1;
       state.clash = null;
       nextTurn(true);
     } else {
+      applyCaptureStats(defP, atkP);
       state.players[atkP].tokens[atkT].steps = -1;
       state.clash = null;
       nextTurn(dice === 6);
@@ -1230,7 +1373,9 @@ function updateHUD() {
       avatar.style.background = COLORS[seat];
       avatar.innerText = LETTERS[seat];
     }
-    document.getElementById(`pname-${slot}`).innerText = p.name;
+    const leader = getLeadingPlayerSeat();
+    const badge = (state.opts?.murga && p.isMurga) ? ' 🐔' : ((state.opts?.bounty && seat === leader) ? ' 🎯' : '');
+    document.getElementById(`pname-${slot}`).innerText = p.name + badge;
     const home = p.tokens.filter(t => t.steps === 56).length;
     document.getElementById(`pscore-${slot}`).innerText = `🏠${home}/4`;
   });
@@ -1239,6 +1384,8 @@ function updateHUD() {
   document.getElementById('turn-indicator').innerText = `${cur.name}'S TURN`;
   document.getElementById('cube-dice').className = `cube show-${state.dice}`;
 
+  const micBtn = document.getElementById('meme-mic-btn');
+  if (micBtn) micBtn.style.display = (state.opts && !state.opts.soundboard) ? 'none' : 'inline-block';
   const hint = document.getElementById('action-hint');
   if (state.phase === 'ROLL') hint.innerText = canIControlCurrentTurn() ? 'TAP DICE' : 'WAITING';
   else if (state.phase === 'SELECT') hint.innerText = 'TAP 3D PAWN';
