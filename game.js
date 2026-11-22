@@ -79,99 +79,221 @@ const BASE_SPOTS = [
 ];
 
 // ==========================================
-// 3. THREE.JS 3D BOARD & PAWN ENGINE
+// 3. THREE.JS AUTHENTIC LUDO KING 3D BOARD + 3D ICONS
 // ==========================================
 let scene, camera, renderer, raycaster, mouseVec;
 let pawnMeshes = {};
+let chaosMeshes = {};
 let cameraTopDown = false;
 let hopState = null;
+
+function createLudoBoardTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1024;
+  c.height = 1024;
+  const ctx = c.getContext('2d');
+  const S = 1024 / 15;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 1024, 1024);
+
+  // 4 Corner Base Quadrants
+  const bases = [
+    [0, 9, COLORS[0]],
+    [0, 0, COLORS[1]],
+    [9, 0, COLORS[2]],
+    [9, 9, COLORS[3]]
+  ];
+  bases.forEach(([gx, gy, col]) => {
+    ctx.fillStyle = col;
+    ctx.fillRect(gx * S, gy * S, 6 * S, 6 * S);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.roundRect((gx + 1) * S, (gy + 1) * S, 4 * S, 4 * S, 28);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#0f172a';
+    ctx.stroke();
+
+    [[2,2],[3,2],[2,3],[3,3]].forEach(([ox, oy]) => {
+      ctx.beginPath();
+      ctx.arc((gx + ox) * S + S / 2, (gy + oy) * S + S / 2, S * 0.34, 0, Math.PI * 2);
+      ctx.fillStyle = col;
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#0f172a';
+      ctx.stroke();
+    });
+  });
+
+  // Track Grid Cells with Crisp Borders
+  for (let gx = 0; gx < 15; gx++) {
+    for (let gy = 0; gy < 15; gy++) {
+      if ((gx < 6 && gy < 6) || (gx > 8 && gy < 6) || (gx < 6 && gy > 8) || (gx > 8 && gy > 8)) continue;
+      if (gx >= 6 && gx <= 8 && gy >= 6 && gy <= 8) continue;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(gx * S, gy * S, S, S);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(gx * S, gy * S, S, S);
+    }
+  }
+
+  // Colored Home Stretches & Start Squares
+  HOME_STRETCH.forEach((path, pIdx) => {
+    path.slice(0, 5).forEach(([gx, gy]) => {
+      ctx.fillStyle = COLORS[pIdx];
+      ctx.fillRect(gx * S + 2, gy * S + 2, S - 4, S - 4);
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(gx * S, gy * S, S, S);
+    });
+    const [sx, sy] = MAIN_TRACK[START_INDEX[pIdx]];
+    ctx.fillStyle = COLORS[pIdx];
+    ctx.fillRect(sx * S + 2, sy * S + 2, S - 4, S - 4);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(sx * S, sy * S, S, S);
+  });
+
+  // Safe Stars (★)
+  SAFE_INDICES.forEach(idx => {
+    const [gx, gy] = MAIN_TRACK[idx];
+    const isColoredStart = [0, 13, 26, 39].includes(idx);
+    if (!isColoredStart) {
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(gx * S + 2, gy * S + 2, S - 4, S - 4);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(gx * S, gy * S, S, S);
+    }
+    ctx.font = 'bold 42px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isColoredStart ? '#ffffff' : '#0f172a';
+    ctx.fillText('★', gx * S + S / 2, gy * S + S / 2 + 2);
+  });
+
+  // Center 4-Color Home Triangle Crown
+  const cx = 512, cy = 512;
+  const x1 = 6 * S, y1 = 6 * S, x2 = 9 * S, y2 = 9 * S;
+  const tris = [
+    [[x1, y2], [x2, y2], COLORS[0]],
+    [[x1, y1], [x1, y2], COLORS[1]],
+    [[x1, y1], [x2, y1], COLORS[2]],
+    [[x2, y1], [x2, y2], COLORS[3]]
+  ];
+  tris.forEach(([p1, p2, col]) => {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.closePath();
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  });
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function makeEmojiSprite(emoji, bgColor) {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = bgColor;
+  ctx.beginPath();
+  ctx.roundRect(10, 10, 108, 108, 24);
+  ctx.fill();
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#ffffff';
+  ctx.stroke();
+
+  ctx.font = 'bold 68px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, 64, 68);
+
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.SpriteMaterial({ map: tex });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(0.85, 0.85, 1);
+  return sprite;
+}
 
 function initThreeBoard() {
   const container = document.getElementById('three-container');
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0f172a);
 
-  camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-  camera.position.set(0, 18.5, 11.5);
-  camera.lookAt(0, 0, 0.5);
+  camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  camera.position.set(0, 18.5, 10.5);
+  camera.lookAt(0, 0, 0.4);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(400, 400);
+  renderer.setSize(420, 420);
   container.appendChild(renderer.domElement);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.78));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.75);
-  dirLight.position.set(8, 22, 10);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+  dirLight.position.set(6, 22, 10);
   scene.add(dirLight);
 
+  // Wooden Frame Base
   const woodBase = new THREE.Mesh(
-    new THREE.BoxGeometry(15.8, 0.8, 15.8),
+    new THREE.BoxGeometry(15.8, 0.7, 15.8),
     new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.4 })
   );
-  woodBase.position.y = -0.45;
+  woodBase.position.y = -0.36;
   scene.add(woodBase);
 
-  const tileGeo = new THREE.BoxGeometry(0.94, 0.25, 0.94);
+  // Authentic High-Res Ludo Board Top Plane
+  const boardTex = createLudoBoardTexture();
+  const boardMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(15, 0.15, 15),
+    new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.3 })
+  );
+  boardMesh.position.y = 0.05;
+  scene.add(boardMesh);
 
-  for (let gx = 0; gx < 15; gx++) {
-    for (let gy = 0; gy < 15; gy++) {
-      let col = 0xf8fafc;
-      if (gx < 6 && gy > 8) col = HEX_COLORS[0];
-      else if (gx < 6 && gy < 6) col = HEX_COLORS[1];
-      else if (gx > 8 && gy < 6) col = HEX_COLORS[2];
-      else if (gx > 8 && gy > 8) col = HEX_COLORS[3];
-      else if (gx >= 6 && gx <= 8 && gy >= 6 && gy <= 8) col = 0xfacc15;
-
-      HOME_STRETCH.forEach((path, pIdx) => {
-        if (path.some(([hx, hy]) => hx === gx && hy === gy)) col = HEX_COLORS[pIdx];
-        const [sx, sy] = MAIN_TRACK[START_INDEX[pIdx]];
-        if (sx === gx && sy === gy) col = HEX_COLORS[pIdx];
-      });
-
-      SAFE_INDICES.forEach(idx => {
-        const [sx, sy] = MAIN_TRACK[idx];
-        if (sx === gx && sy === gy && ![0,13,26,39].includes(idx)) col = 0x94a3b8;
-      });
-
-      if (state.chaosEnabled) {
-        CHAOS_INDICES.forEach(idx => {
-          const [cx, cy] = MAIN_TRACK[idx];
-          if (cx === gx && cy === gy) col = 0xc084fc; // Purple Lucky "?" Tile
-        });
-      }
-
-      if ((gx >= 1 && gx <= 4 && gy >= 10 && gy <= 13) ||
-          (gx >= 1 && gx <= 4 && gy >= 1 && gy <= 4) ||
-          (gx >= 10 && gx <= 13 && gy >= 1 && gy <= 4) ||
-          (gx >= 10 && gx <= 13 && gy >= 10 && gy <= 13)) {
-        col = 0xffffff;
-      }
-
-      const tile = new THREE.Mesh(tileGeo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.35 }));
-      tile.position.set(gx - 7, 0, gy - 7);
-      scene.add(tile);
-    }
+  // Visible 3D Floating Power-Up & Trap Badges on Track
+  chaosMeshes = {};
+  if (state.chaosEnabled) {
+    CHAOS_INDICES.forEach((trackIdx, i) => {
+      const [gx, gy] = MAIN_TRACK[trackIdx];
+      const isBomb = (i % 2 === 1);
+      const badge = makeEmojiSprite(isBomb ? '💣' : '❓', isBomb ? '#dc2626' : '#9333ea');
+      badge.position.set(gx - 7, 0.45, gy - 7);
+      scene.add(badge);
+      chaosMeshes[trackIdx] = badge;
+    });
   }
 
+  // Create 3D Teardrop Pawns
   for (let pIdx = 0; pIdx < 4; pIdx++) {
     for (let tIdx = 0; tIdx < 4; tIdx++) {
       const group = new THREE.Group();
-      const bodyMat = new THREE.MeshStandardMaterial({ color: HEX_COLORS[pIdx], roughness: 0.25 });
+      const bodyMat = new THREE.MeshStandardMaterial({ color: HEX_COLORS[pIdx], roughness: 0.22 });
 
-      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.9, 16), bodyMat);
-      cone.position.y = 0.55;
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.9, 18), bodyMat);
+      cone.position.y = 0.58;
       group.add(cone);
 
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), bodyMat);
-      head.position.y = 1.05;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 18, 18), bodyMat);
+      head.position.y = 1.08;
       group.add(head);
 
       const ring = new THREE.Mesh(
-        new THREE.RingGeometry(0.38, 0.5, 20),
+        new THREE.RingGeometry(0.4, 0.54, 24),
         new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide })
       );
       ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.16;
+      ring.position.y = 0.18;
       ring.visible = false;
       ring.name = 'highlightRing';
       group.add(ring);
@@ -186,8 +308,13 @@ function initThreeBoard() {
   mouseVec = new THREE.Vector2();
   renderer.domElement.addEventListener('pointerdown', onThreeBoardTap);
 
+  let pulseTick = 0;
   function animateThree() {
     requestAnimationFrame(animateThree);
+    pulseTick += 0.08;
+    Object.values(chaosMeshes).forEach((spr, i) => {
+      spr.position.y = 0.48 + Math.sin(pulseTick + i) * 0.12;
+    });
     syncThreePawns();
     renderer.render(scene, camera);
   }
@@ -197,8 +324,14 @@ function initThreeBoard() {
 function toggleCameraView() {
   cameraTopDown = !cameraTopDown;
   document.getElementById('cam-btn').innerText = cameraTopDown ? '🎥 TOP' : '🎥 3D';
-  camera.position.set(0, cameraTopDown ? 22 : 18.5, cameraTopDown ? 0.1 : 11.5);
-  camera.lookAt(0, 0, 0.5);
+  if (cameraTopDown) {
+    // Keep Z slightly positive (+0.05) so North/South orientation never flips upside down!
+    camera.position.set(0, 22.5, 0.05);
+    camera.lookAt(0, 0, 0);
+  } else {
+    camera.position.set(0, 18.5, 10.5);
+    camera.lookAt(0, 0, 0.4);
+  }
 }
 
 function getGridCoordsForToken(pIdx, token) {
