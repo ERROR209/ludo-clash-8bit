@@ -81,7 +81,7 @@ const BASE_SPOTS = [
 // ==========================================
 // 3. THREE.JS AUTHENTIC LUDO KING 3D BOARD + 3D ICONS
 // ==========================================
-let scene, camera, renderer, raycaster, mouseVec;
+let scene, boardGroup, camera, renderer, raycaster, mouseVec;
 let pawnMeshes = {};
 let chaosMeshes = {};
 let cameraTopDown = false;
@@ -239,6 +239,8 @@ function initThreeBoard() {
   renderer.setSize(420, 420);
   container.appendChild(renderer.domElement);
 
+  boardGroup = new THREE.Group();
+  scene.add(boardGroup);
   scene.add(new THREE.AmbientLight(0xffffff, 0.85));
   const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
   dirLight.position.set(6, 22, 10);
@@ -250,7 +252,7 @@ function initThreeBoard() {
     new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.4 })
   );
   woodBase.position.y = -0.36;
-  scene.add(woodBase);
+  boardGroup.add(woodBase);
 
   // Authentic High-Res Ludo Board Top Plane
   const boardTex = createLudoBoardTexture();
@@ -259,7 +261,7 @@ function initThreeBoard() {
     new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.3 })
   );
   boardMesh.position.y = 0.05;
-  scene.add(boardMesh);
+  boardGroup.add(boardMesh);
 
   // Visible 3D Floating Power-Up & Trap Badges on Track
   chaosMeshes = {};
@@ -269,7 +271,7 @@ function initThreeBoard() {
       const isBomb = (i % 2 === 1);
       const badge = makeEmojiSprite(isBomb ? '💣' : '❓', isBomb ? '#dc2626' : '#9333ea');
       badge.position.set(gx - 7, 0.45, gy - 7);
-      scene.add(badge);
+      boardGroup.add(badge);
       chaosMeshes[trackIdx] = badge;
     });
   }
@@ -299,7 +301,7 @@ function initThreeBoard() {
       group.add(ring);
 
       group.userData = { pIdx, tIdx };
-      scene.add(group);
+      boardGroup.add(group);
       pawnMeshes[`${pIdx}-${tIdx}`] = group;
     }
   }
@@ -350,6 +352,7 @@ function getGridCoordsForToken(pIdx, token) {
 }
 
 function syncThreePawns() {
+  if (boardGroup) boardGroup.rotation.y = -(mySeat || 0) * (Math.PI / 2);
   if (!state.players.length) return;
   const movable = (state.phase === 'SELECT') ? getMovableTokens(state.turn, state.dice).map(t => t.id) : [];
 
@@ -417,7 +420,7 @@ function onThreeBoardTap(e) {
 }
 
 // ==========================================
-// 4. GAME STATE & ONLINE PEERJS
+// 4. GAME STATE & ONLINE PEERJS (ANTI-DUPLICATE JOIN)
 // ==========================================
 let gameMode = 'bot';
 let mySeat = 0;
@@ -425,6 +428,8 @@ let isHost = true;
 let peer = null;
 let connections = [];
 let hostConn = null;
+let isJoining = false;
+const CLIENT_UUID = 'DEV-' + Math.random().toString(36).substring(2, 10);
 
 let state = {
   players: [],
@@ -460,6 +465,7 @@ function showOnlineLobby() {
 }
 
 function hostOnlineGame() {
+  if (peer) return;
   const code = Math.random().toString(36).substring(2, 6).toUpperCase();
   isHost = true;
   mySeat = 0;
@@ -467,7 +473,7 @@ function hostOnlineGame() {
   document.getElementById('room-code-display').innerText = code;
   peer = new Peer('LUDOPARTY-' + code);
   const myName = document.getElementById('player-name').value.trim() || 'Host';
-  let members = [{ seat: 0, name: myName }];
+  let members = [{ seat: 0, name: myName, uuid: CLIENT_UUID }];
 
   peer.on('open', () => {
     document.getElementById('net-status').innerText = 'Room Ready! Share code!';
@@ -475,15 +481,28 @@ function hostOnlineGame() {
   });
 
   peer.on('connection', conn => {
-    const seat = connections.length + 1;
-    if (seat > 3) { conn.close(); return; }
-    connections.push(conn);
     conn.on('data', d => {
       if (d.type === 'HELLO') {
-        members.push({ seat, name: d.name });
-        document.getElementById('lobby-players-list').innerText = members.map(m => m.name).join(', ');
+        // Prevent same device/phone from joining multiple times!
+        const existing = members.find(m => m.uuid === d.uuid);
+        if (existing) {
+          conn.send({ type: 'WELCOME', seat: existing.seat });
+          return;
+        }
+        if (members.length >= 4) {
+          conn.send({ type: 'FULL' });
+          setTimeout(() => conn.close(), 200);
+          return;
+        }
+        const seat = members.length;
+        connections.push(conn);
+        members.push({ seat, name: d.name, uuid: d.uuid });
+        document.getElementById('lobby-players-list').innerText =
+          'Joined (' + members.length + '/4): ' + members.map(m => m.name).join(', ');
         conn.send({ type: 'WELCOME', seat });
       } else if (d.type === 'ACTION') {
+        const sender = members.find(m => m.uuid === d.uuid);
+        const seat = sender ? sender.seat : 1;
         handleRemoteAction(seat, d);
       }
     });
@@ -492,19 +511,38 @@ function hostOnlineGame() {
 }
 
 function joinOnlineGame() {
+  if (isJoining || (hostConn && hostConn.open)) return;
   const code = document.getElementById('join-code-input').value.trim().toUpperCase();
   if (code.length < 4) return;
+
+  isJoining = true;
   isHost = false;
+  const joinBtn = document.querySelector('.join-bar button');
+  if (joinBtn) joinBtn.disabled = true;
+  document.getElementById('net-status').innerText = 'Connecting to ' + code + '...';
+
+  if (peer) peer.destroy();
   peer = new Peer();
   peer.on('open', () => {
     hostConn = peer.connect('LUDOPARTY-' + code);
     hostConn.on('open', () => {
-      hostConn.send({ type: 'HELLO', name: document.getElementById('player-name').value.trim() || 'Guest' });
+      hostConn.send({
+        type: 'HELLO',
+        uuid: CLIENT_UUID,
+        name: document.getElementById('player-name').value.trim() || 'Guest'
+      });
       document.getElementById('net-status').innerText = 'Connected! Waiting for Host...';
     });
     hostConn.on('data', d => {
-      if (d.type === 'WELCOME') mySeat = d.seat;
-      else if (d.type === 'SYNC') {
+      if (d.type === 'WELCOME') {
+        mySeat = d.seat;
+        document.getElementById('net-status').innerText =
+          'Joined as ' + COLOR_NAMES[mySeat] + '! Waiting for Host...';
+      } else if (d.type === 'FULL') {
+        document.getElementById('net-status').innerText = 'Room is Full (4/4)!';
+        isJoining = false;
+        if (joinBtn) joinBtn.disabled = false;
+      } else if (d.type === 'SYNC') {
         gameMode = 'online';
         const wasClash = (state.phase === 'CLASH');
         state = d.state;
@@ -514,6 +552,11 @@ function joinOnlineGame() {
       } else if (d.type === 'EMOTE') {
         showEmoteBubble(d.seat, d.emoji);
       }
+    });
+    hostConn.on('error', () => {
+      isJoining = false;
+      if (joinBtn) joinBtn.disabled = false;
+      document.getElementById('net-status').innerText = 'Connection failed. Try again.';
     });
   });
 }
@@ -539,7 +582,7 @@ function broadcastState() {
 
 function sendActionToHost(obj) {
   if (isHost) handleRemoteAction(mySeat, obj);
-  else if (hostConn && hostConn.open) hostConn.send({ type: 'ACTION', ...obj });
+  else if (hostConn && hostConn.open) hostConn.send({ type: 'ACTION', uuid: CLIENT_UUID, ...obj });
 }
 
 function handleRemoteAction(seat, data) {
@@ -586,15 +629,7 @@ function sendEmote(emoji) {
   }
 }
 
-function showEmoteBubble(seat, emoji) {
-  const el = document.getElementById(`emote-${seat}`);
-  if (!el) return;
-  el.innerText = emoji;
-  el.classList.remove('hidden');
-  playTone(720, 'sine', 0.08, 0, 0.09);
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.add('hidden'), 1800);
-}
+
 
 // ==========================================
 // 6. DICE, TOKEN MOVEMENT & LUCKY CHAOS TILES
@@ -1119,9 +1154,39 @@ function updateHUD() {
     if (!p.active) { card.style.visibility = 'hidden'; return; }
     card.style.visibility = 'visible';
     card.classList.toggle('active-turn', state.turn === idx);
-    document.getElementById(`pname-${idx}`).innerText = p.name;
+    documentfunction getVisualSlotForSeat(seat) {
+  // Visual slot 0 = Bottom-Left, 1 = Top-Left, 2 = Top-Right, 3 = Bottom-Right
+  return (seat - (mySeat || 0) + 4) % 4;
+}
+
+function showEmoteBubble(seat, emoji) {
+  const slot = getVisualSlotForSeat(seat);
+  const el = document.getElementById(`emote-${slot}`);
+  if (!el) return;
+  el.innerText = emoji;
+  el.classList.remove('hidden');
+  playTone(720, 'sine', 0.08, 0, 0.09);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 1800);
+}
+
+function updateHUD() {
+  const LETTERS = ['R', 'G', 'Y', 'B'];
+  state.players.forEach((p, seat) => {
+    const slot = getVisualSlotForSeat(seat);
+    const card = document.getElementById(`pcard-${slot}`);
+    if (!p.active) { card.style.visibility = 'hidden'; return; }
+    card.style.visibility = 'visible';
+    card.classList.toggle('active-turn', state.turn === seat);
+
+    const avatar = card.querySelector('.lk-avatar');
+    if (avatar) {
+      avatar.style.background = COLORS[seat];
+      avatar.innerText = LETTERS[seat];
+    }
+    document.getElementById(`pname-${slot}`).innerText = p.name;
     const home = p.tokens.filter(t => t.steps === 56).length;
-    document.getElementById(`pscore-${idx}`).innerText = `🏠${home}/4`;
+    document.getElementById(`pscore-${slot}`).innerText = `🏠${home}/4`;
   });
 
   const cur = state.players[state.turn];
