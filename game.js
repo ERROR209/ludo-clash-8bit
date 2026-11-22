@@ -73,14 +73,19 @@ function toggleChaosDrawer() {
 
 function readLobbyOptions() {
   return {
-    fastStart:  document.getElementById('opt-fast-start')?.checked ?? true,
-    chaos:      document.getElementById('opt-chaos')?.checked ?? true,
-    fake6:      document.getElementById('opt-fake6')?.checked ?? true,
-    magnet:     document.getElementById('opt-magnet')?.checked ?? true,
-    quake:      document.getElementById('opt-quake')?.checked ?? true,
-    murga:      document.getElementById('opt-murga')?.checked ?? true,
-    bounty:     document.getElementById('opt-bounty')?.checked ?? true,
-    soundboard: document.getElementById('opt-soundboard')?.checked ?? true
+    fastStart:   document.getElementById('opt-fast-start')?.checked ?? true,
+    chaos:       document.getElementById('opt-chaos')?.checked ?? true,
+    trapPlacer:  document.getElementById('opt-trap-placer')?.checked ?? false,
+    cutscenes:   document.getElementById('opt-cutscenes')?.checked ?? true,
+    suddenDeath: document.getElementById('opt-sudden-death')?.checked ?? true,
+    fake6:       document.getElementById('opt-fake6')?.checked ?? true,
+    magnet:      document.getElementById('opt-magnet')?.checked ?? true,
+    quake:       document.getElementById('opt-quake')?.checked ?? true,
+    murga:       document.getElementById('opt-murga')?.checked ?? true,
+    bounty:      document.getElementById('opt-bounty')?.checked ?? true,
+    alliance:    document.getElementById('opt-alliance')?.checked ?? true,
+    homeAlert:   document.getElementById('opt-home-alert')?.checked ?? true,
+    soundboard:  document.getElementById('opt-soundboard')?.checked ?? true
   };
 }
 
@@ -113,7 +118,7 @@ const MAIN_TRACK = [
 ];
 
 const START_INDEX = [0, 13, 26, 39];
-const SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
+const INITIAL_SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
 
 const SECRET_ITEM_POOL = [
   { type: 'BOOST', emoji: '⚡', bg: '#16a34a', toast: '⚡ SECRET BOOST +4 STEPS!' },
@@ -211,7 +216,7 @@ function createLudoBoardTexture() {
     ctx.strokeRect(sx * S, sy * S, S, S);
   });
 
-  SAFE_INDICES.forEach(idx => {
+  (state.safeIndices || INITIAL_(state.safeIndices || INITIAL_SAFE_INDICES)).forEach(idx => {
     const [gx, gy] = MAIN_TRACK[idx];
     const isColoredStart = [0, 13, 26, 39].includes(idx);
     if (!isColoredStart) {
@@ -381,6 +386,20 @@ function getGridCoordsForToken(pIdx, token) {
     const [bx, by] = BASE_SPOTS[pIdx][token.id];
     return { gx: bx, gy: by, key: `B-${pIdx}-${token.id}` };
   }
+  // HOME ALERT MODE: Warn everyone when a token enters Home Stretch (steps >= 51)!
+  if (state.opts?.homeAlert && token.steps >= 51 && !state.players[pIdx].homeAlerted) {
+    state.players[pIdx].homeAlerted = true;
+    SFX.bonk();
+    showToast(`🚨 ALERT! ${state.players[pIdx].name} IS ABOUT TO WIN!`);
+  }
+
+  // HOME ALERT MODE: Warn everyone when a token enters Home Stretch (steps >= 51)!
+  if (state.opts?.homeAlert && token.steps >= 51 && !state.players[pIdx].homeAlerted) {
+    state.players[pIdx].homeAlerted = true;
+    SFX.bonk();
+    showToast(`🚨 ALERT! ${state.players[pIdx].name} IS ABOUT TO WIN!`);
+  }
+
   if (token.steps <= 50) {
     const gIdx = (START_INDEX[pIdx] + token.steps) % 52;
     const [gx, gy] = MAIN_TRACK[gIdx];
@@ -467,12 +486,29 @@ function syncThreePawns() {
 }
 
 function onThreeBoardTap(e) {
-  if (state.phase !== 'SELECT' || !canIControlCurrentTurn()) return;
   const rect = renderer.domElement.getBoundingClientRect();
   mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
   mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
   raycaster.setFromCamera(mouseVec, camera);
+
+  if (state.phase === 'PLACE_TRAPS') {
+    const canPlace = (gameMode === 'local') || (mySeat === state.trapPlacingSeat);
+    if (!canPlace) return;
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.12);
+    const hitPt = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(plane, hitPt)) {
+      const gx = Math.round(hitPt.x + 7);
+      const gy = Math.round(hitPt.z + 7);
+      const trackIdx = MAIN_TRACK.findIndex(([tx, ty]) => tx === gx && ty === gy);
+      if (trackIdx !== -1) {
+        if (gameMode === 'online' && !isHost) sendActionToHost({ action: 'PLACE_TRAP', trackIdx });
+        else placeCustomTrap(state.trapPlacingSeat, trackIdx);
+      }
+    }
+    return;
+  }
+
+  if (state.phase !== 'SELECT' || !canIControlCurrentTurn()) return;
   const candidates = [];
   getMovableTokens(state.turn, state.dice).forEach(t => {
     const grp = pawnMeshes[`${state.turn}-${t.id}`];
@@ -485,6 +521,55 @@ function onThreeBoardTap(e) {
     if (gameMode === 'online' && !isHost) sendActionToHost({ action: 'MOVE', tokenId: tId });
     else executeTokenMove(state.turn, tId);
   }
+}
+
+function placeCustomTrap(seat, trackIdx) {
+  if (state.phase !== 'PLACE_TRAPS' || state.trapPlacingSeat !== seat) return;
+  if ((state.safeIndices || INITIAL_SAFE_INDICES).includes(trackIdx)) return;
+  if ((state.secretItems || []).some(it => it.trackIdx === trackIdx)) return;
+
+  const isBomb = (state.trapsLeft === 2);
+  state.secretItems.push({
+    id: `CUSTOM-${seat}-${state.trapsLeft}-${Math.random().toString(36).slice(2,5)}`,
+    owner: seat,
+    trackIdx,
+    type: isBomb ? 'BOMB' : 'WARP',
+    emoji: isBomb ? '💣' : '🌀',
+    bg: isBomb ? '#dc2626' : '#9333ea',
+    toast: isBomb ? '💣 PLAYER BOMB -3 STEPS!' : '🌀 PLAYER WARP TO START!',
+    used: false
+  });
+  state.trapsLeft -= 1;
+  SFX.hop();
+
+  if (state.trapsLeft <= 0) {
+    let nextS = seat + 1;
+    while (nextS < 4 && !state.players[nextS].active) nextS++;
+    if (nextS >= 4) {
+      state.phase = 'ROLL';
+      showToast('🎲 ALL TRAPS HIDDEN! ROLL DICE!');
+    } else {
+      state.trapPlacingSeat = nextS;
+      state.trapsLeft = 2;
+      if (state.players[nextS].isBot) {
+        autoBotPlaceTraps(nextS);
+      }
+    }
+  }
+  updateHUD();
+  broadcastState();
+}
+
+function autoBotPlaceTraps(botSeat) {
+  setTimeout(() => {
+    if (state.phase !== 'PLACE_TRAPS' || state.trapPlacingSeat !== botSeat) return;
+    const idx = Math.floor(Math.random() * 52);
+    if (!(state.safeIndices || INITIAL_SAFE_INDICES).includes(idx) && !(state.secretItems || []).some(it => it.trackIdx === idx)) {
+      placeCustomTrap(botSeat, idx);
+    } else {
+      autoBotPlaceTraps(botSeat);
+    }
+  }, 300);
 }
 
 // ==========================================
@@ -517,7 +602,7 @@ function generateSecretItemsForPlayers(configs, opts) {
   
   const available = [];
   for (let i = 0; i < 52; i++) {
-    if (!SAFE_INDICES.includes(i)) available.push(i);
+    if (!(state.safeIndices || INITIAL_(state.safeIndices || INITIAL_SAFE_INDICES)).includes(i)) available.push(i);
   }
   for (let i = available.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -547,6 +632,7 @@ function generateSecretItemsForPlayers(configs, opts) {
 }
 
 function createInitialState(configs, opts) {
+  const firstActive = configs.findIndex(c => c.active);
   return {
     players: configs.map((c, idx) => ({
       id: idx,
@@ -555,16 +641,21 @@ function createInitialState(configs, opts) {
       active: c.active,
       kills: 0,
       deaths: 0,
-      trapsHit: 0,
       isMurga: false,
+      truceTurns: 0,
+      homeAlerted: false,
       tokens: [0, 1, 2, 3].map(tId => ({
         id: tId,
         steps: (opts.fastStart && tId === 0) ? 0 : -1
       }))
     })),
-    turn: 0,
+    turn: firstActive === -1 ? 0 : firstActive,
+    turnCount: 1,
     dice: 1,
-    phase: 'ROLL',
+    phase: opts.trapPlacer ? 'PLACE_TRAPS' : 'ROLL',
+    trapPlacingSeat: firstActive === -1 ? 0 : firstActive,
+    trapsLeft: 2,
+    safeIndices: [...INITIAL_SAFE_INDICES],
     opts,
     secretItems: generateSecretItemsForPlayers(configs, opts),
     clash: null
@@ -718,7 +809,11 @@ function sendActionToHost(obj) {
 }
 
 function handleRemoteAction(seat, data) {
-  if (data.action === 'ROLL' && state.turn === seat && state.phase === 'ROLL') executeRoll();
+  if (data.action === 'PLACE_TRAP' && state.phase === 'PLACE_TRAPS' && state.trapPlacingSeat === seat) placeCustomTrap(seat, data.trackIdx);
+  else if (data.action === 'TRUCE') applyTwoTurnTruce(seat);
+  else if (data.action === 'PLACE_TRAP' && state.phase === 'PLACE_TRAPS' && state.trapPlacingSeat === seat) placeCustomTrap(seat, data.trackIdx);
+  else if (data.action === 'TRUCE') applyTwoTurnTruce(seat);
+  else if (data.action === 'ROLL' && state.turn === seat && state.phase === 'ROLL') executeRoll();
   else if (data.action === 'MOVE' && state.turn === seat && state.phase === 'SELECT') executeTokenMove(seat, data.tokenId);
   else if (data.action === 'ROAST') {
     triggerIndianMemeSound();
@@ -841,9 +936,22 @@ function getMovableTokens(pIdx, dice) {
 
 function nextTurn(bonus) {
   if (!bonus) {
+    if (state.players[state.turn]?.truceTurns > 0) {
+      state.players[state.turn].truceTurns -= 1;
+    }
     do {
       state.turn = (state.turn + 1) % 4;
     } while (!state.players[state.turn].active);
+    state.turnCount = (state.turnCount || 1) + 1;
+
+    // SUDDEN DEATH MODE: Remove a Safe Star every 5 turns after Turn 16!
+    if (state.opts?.suddenDeath && state.turnCount >= 16 && state.turnCount % 5 === 0) {
+      if (state.safeIndices && state.safeIndices.length > 0) {
+        state.safeIndices.pop();
+        SFX.bonk();
+        showToast('⚠️ SUDDEN DEATH: 1 SAFE STAR LOST!');
+      }
+    }
   }
   state.phase = 'ROLL';
   updateHUD();
@@ -852,6 +960,24 @@ function nextTurn(bonus) {
   if (isHost && state.players[state.turn].isBot) {
     setTimeout(executeRoll, 600);
   }
+}
+
+function activateTwoTurnTruce() {
+  if (state.opts && !state.opts.alliance) return;
+  const seat = (gameMode === 'local') ? state.turn : mySeat;
+  if (gameMode === 'online' && !isHost) {
+    sendActionToHost({ action: 'TRUCE' });
+  } else {
+    applyTwoTurnTruce(seat);
+    broadcastState();
+  }
+}
+
+function applyTwoTurnTruce(seat) {
+  state.players[seat].truceTurns = 2;
+  SFX.safe();
+  showToast(`🤝 ${state.players[seat].name} CALLED 2-TURN DOSTI!`);
+  updateHUD();
 }
 
 function executeTokenMove(pIdx, tokenId) {
@@ -932,7 +1058,7 @@ function finishMove(pIdx, token, dice) {
     }
 
     const finalGIdx = (START_INDEX[pIdx] + token.steps) % 52;
-    if (!SAFE_INDICES.includes(finalGIdx)) {
+    if (!(state.safeIndices || INITIAL_(state.safeIndices || INITIAL_SAFE_INDICES)).includes(finalGIdx)) {
       const enemy = findEnemyAt(pIdx, finalGIdx);
       if (enemy) {
         triggerInstantFunnyClash(pIdx, token.id, enemy.pIdx, enemy.token.id, dice);
@@ -951,7 +1077,7 @@ function findNearbyOpponentWithin(myP, centerGIdx, range) {
   for (let offset = -range; offset <= range; offset++) {
     if (offset === 0) continue;
     const checkIdx = (centerGIdx + offset + 52) % 52;
-    if (SAFE_INDICES.includes(checkIdx)) continue;
+    if ((state.safeIndices || INITIAL_(state.safeIndices || INITIAL_SAFE_INDICES)).includes(checkIdx)) continue;
     const found = findEnemyAt(myP, checkIdx);
     if (found) return found;
   }
@@ -1066,10 +1192,17 @@ function triggerInstantFunnyClash(atkP, atkT, defP, defT, dice) {
   const leaderSeat = getLeadingPlayerSeat();
   const isBountyKill = (state.opts?.bounty && defP === leaderSeat && atkP !== leaderSeat);
 
-  if (Math.random() < 0.70) {
+  const wasAlly = (state.opts?.alliance && (state.players[atkP].truceTurns > 0 || state.players[defP].truceTurns > 0));
+  if (wasAlly) {
+    state.players[atkP].truceTurns = 0;
+    state.players[defP].truceTurns = 0;
+  }
+  const finalToast = wasAlly ? `🐍 BETRAYAL! SAANP NIKLA! ${memeText}` : (isBountyKill ? `🎯 SUPARI BOUNTY! ${memeText}` : `${COLOR_NAMES[atkP]}: ${memeText}`);
+
+  if (!state.opts?.cutscenes || Math.random() < 0.70) {
     SFX.bonk();
     applyCaptureStats(atkP, defP);
-    showToast(isBountyKill ? `🎯 SUPARI BOUNTY! ${memeText}` : `${COLOR_NAMES[atkP]}: ${memeText}`);
+    showToast(finalToast);
     state.players[defP].tokens[defT].steps = -1;
     broadcastState();
     setTimeout(() => nextTurn(true), 650);
@@ -1360,41 +1493,53 @@ function showEmoteBubble(seat, emoji) {
 }
 
 function updateHUD() {
-  const LETTERS = ['R', 'G', 'Y', 'B'];
+  const LETTERS = ["R", "G", "Y", "B"];
   state.players.forEach((p, seat) => {
     const slot = getVisualSlotForSeat(seat);
     const card = document.getElementById(`pcard-${slot}`);
-    if (!p.active) { card.style.visibility = 'hidden'; return; }
-    card.style.visibility = 'visible';
-    card.classList.toggle('active-turn', state.turn === seat);
+    if (!card) return;
+    if (!p.active) { card.style.visibility = "hidden"; return; }
+    card.style.visibility = "visible";
+    card.classList.toggle("active-turn", state.turn === seat);
 
-    const avatar = card.querySelector('.lk-avatar');
+    const avatar = card.querySelector(".lk-avatar");
     if (avatar) {
       avatar.style.background = COLORS[seat];
       avatar.innerText = LETTERS[seat];
     }
     const leader = getLeadingPlayerSeat();
-    const badge = (state.opts?.murga && p.isMurga) ? ' 🐔' : ((state.opts?.bounty && seat === leader) ? ' 🎯' : '');
+    const badge = (state.opts?.murga && p.isMurga) ? " 🐔" : ((state.opts?.bounty && seat === leader) ? " 🎯" : "");
     document.getElementById(`pname-${slot}`).innerText = p.name + badge;
     const home = p.tokens.filter(t => t.steps === 56).length;
     document.getElementById(`pscore-${slot}`).innerText = `🏠${home}/4`;
   });
 
   const cur = state.players[state.turn];
-  document.getElementById('turn-indicator').innerText = `${cur.name}'S TURN`;
-  document.getElementById('cube-dice').className = `cube show-${state.dice}`;
+  if (cur) document.getElementById("turn-indicator").innerText = `${cur.name}'S TURN`;
+  document.getElementById("cube-dice").className = `cube show-${state.dice}`;
 
-  const micBtn = document.getElementById('meme-mic-btn');
-  if (micBtn) micBtn.style.display = (state.opts && !state.opts.soundboard) ? 'none' : 'inline-block';
-  const hint = document.getElementById('action-hint');
-  if (state.phase === 'ROLL') hint.innerText = canIControlCurrentTurn() ? 'TAP DICE' : 'WAITING';
-  else if (state.phase === 'SELECT') hint.innerText = 'TAP 3D PAWN';
-  else hint.innerText = 'MOVING';
+  const micBtn = document.getElementById("meme-mic-btn");
+  if (micBtn) micBtn.style.display = (state.opts && !state.opts.soundboard) ? "none" : "inline-block";
+
+  const truceBtn = document.getElementById("truce-btn");
+  if (truceBtn) truceBtn.style.display = (state.opts && !state.opts.alliance) ? "none" : "inline-block";
+
+  const hint = document.getElementById("action-hint");
+  if (state.phase === "PLACE_TRAPS") {
+    const pName = state.players[state.trapPlacingSeat]?.name || "PLAYER";
+    hint.innerText = `${pName}: TAP ${state.trapsLeft} TILES!`;
+  } else if (state.phase === "ROLL") {
+    hint.innerText = canIControlCurrentTurn() ? "TAP DICE" : "WAITING";
+  } else if (state.phase === "SELECT") {
+    hint.innerText = "TAP 3D PAWN";
+  } else {
+    hint.innerText = "MOVING";
+  }
 }
 
 function showToast(msg) {
-  const t = document.getElementById('toast-banner');
+  const t = document.getElementById("toast-banner");
   t.innerText = msg;
-  t.classList.remove('hidden');
-  setTimeout(() => t.classList.add('hidden'), 1200);
+  t.classList.remove("hidden");
+  setTimeout(() => t.classList.add("hidden"), 1200);
 }

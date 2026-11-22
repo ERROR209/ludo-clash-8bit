@@ -11,32 +11,37 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 </head>
 <body>
-  <!-- CLEAN FUN LOBBY WITH CUSTOM CHAOS SETTINGS -->
+  <!-- CLEAN FUN LOBBY WITH ALL 13 CUSTOM CHAOS SETTINGS -->
   <div id="menu-screen" class="screen active">
     <div class="royal-card">
       <div class="crown-icon">👑</div>
       <h1 class="royal-title">LUDO PARTY 3D</h1>
-      <div class="royal-badge">CUSTOM CHAOS EDITION</div>
+      <div class="royal-badge">ULTIMATE CHAOS EDITION</div>
 
       <div class="name-box">
         <label>YOUR NICKNAME</label>
         <input type="text" id="player-name" maxlength="10" placeholder="Enter Name" value="Player1" />
       </div>
 
-      <!-- CUSTOMIZABLE PARTY CHAOS MODES (ON/OFF) -->
+      <!-- ALL 13 PARTY CHAOS MODES (ON/OFF) -->
       <div class="chaos-drawer">
         <div class="drawer-header" onclick="toggleChaosDrawer()">
-          <span>⚙️ PARTY CHAOS MODES (ON/OFF)</span>
+          <span>⚙️ PARTY CHAOS MODES (13 OPTIONS)</span>
           <span id="drawer-arrow">▼</span>
         </div>
         <div id="chaos-grid" class="chaos-grid">
           <label class="toggle-chip"><input type="checkbox" id="opt-fast-start" checked /><span>⚡ Fast Start</span></label>
-          <label class="toggle-chip"><input type="checkbox" id="opt-chaos" checked /><span>💣 Secret Traps</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-chaos" checked /><span>❓ Random Power-Ups</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-trap-placer" /><span>💣 Place Own Traps</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-cutscenes" checked /><span>🎬 Anime Cutscenes</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-sudden-death" checked /><span>⚠️ Sudden Death</span></label>
           <label class="toggle-chip"><input type="checkbox" id="opt-fake6" checked /><span>🎲 Fake 6 Prank</span></label>
           <label class="toggle-chip"><input type="checkbox" id="opt-magnet" checked /><span>🧲 Chumbak Goti</span></label>
           <label class="toggle-chip"><input type="checkbox" id="opt-quake" checked /><span>🌪️ Bhukamp Shuffle</span></label>
           <label class="toggle-chip"><input type="checkbox" id="opt-murga" checked /><span>🐔 Murga Penalty</span></label>
           <label class="toggle-chip"><input type="checkbox" id="opt-bounty" checked /><span>🎯 Supari Bounty</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-alliance" checked /><span>🤝 2-Turn Dosti</span></label>
+          <label class="toggle-chip"><input type="checkbox" id="opt-home-alert" checked /><span>🚨 Win Alert</span></label>
           <label class="toggle-chip"><input type="checkbox" id="opt-soundboard" checked /><span>🎤 Meme Mic</span></label>
         </div>
       </div>
@@ -96,12 +101,12 @@
       <div id="toast-banner" class="lk-toast hidden">SAFE STAR!</div>
     </div>
 
-    <!-- FUN EMOTE + LIVE MEME ROAST BAR -->
+    <!-- FUN EMOTE + DOSTI + LIVE MEME ROAST BAR -->
     <div class="emote-bar">
       <button onclick="sendEmote('😂')">😂</button>
       <button onclick="sendEmote('😭')">😭</button>
       <button onclick="sendEmote('🔥')">🔥</button>
-      <button onclick="sendEmote('🐔')">🐔</button>
+      <button id="truce-btn" onclick="activateTwoTurnTruce()">🤝 DOSTI</button>
       <button id="meme-mic-btn" class="mic-btn" onclick="triggerLiveMemeRoast()">🎤 ROAST</button>
     </div>
 
