@@ -370,3 +370,24 @@ body {
 .quake-active {
   animation: quakeShake 0.45s ease-in-out 2;
 }
+
+/* CLEAR ON/OFF VISUAL STATE FOR CHAOS TOGGLE CHIPS */
+.toggle-chip {
+  background: #1e293b !important;
+  border: 2px solid #475569 !important;
+  color: #94a3b8 !important;
+  opacity: 0.72;
+  transition: all 0.15s ease;
+}
+.toggle-chip input[type="checkbox"] {
+  accent-color: #22c55e;
+  width: 14px;
+  height: 14px;
+}
+.toggle-chip:has(input:checked) {
+  background: linear-gradient(180deg, #16a34a, #15803d) !important;
+  border-color: #fde047 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.45);
+}
