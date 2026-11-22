@@ -645,12 +645,31 @@ function joinOnlineGame() {
 
 function launchOnlineMatch() {
   const members = window._members || [{ seat: 0, name: 'Host' }];
+
+  // If 2 players are in the room, place them diagonally opposite (Seat 0 Red vs Seat 2 Yellow) like Ludo King!
+  if (members.length === 2) {
+    members[0].seat = 0;
+    members[1].seat = 2;
+    connections.forEach((c, idx) => {
+      if (c.open) c.send({ type: 'WELCOME', seat: 2 });
+    });
+  }
+
   const configs = [0, 1, 2, 3].map(s => {
     const f = members.find(m => m.seat === s);
-    return { name: f ? f.name : `CPU ${s+1}`, isBot: !f, active: true };
+    return {
+      name: f ? f.name : '',
+      isBot: false,
+      active: !!f
+    };
   });
+
   gameMode = 'online';
-  state = createInitialState(configs, document.getElementById('opt-fast-start').checked, document.getElementById('opt-chaos').checked);
+  state = createInitialState(
+    configs,
+    document.getElementById('opt-fast-start').checked,
+    document.getElementById('opt-chaos').checked
+  );
   switchToGameScreen();
   updateHUD();
   broadcastState();
